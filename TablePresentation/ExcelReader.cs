@@ -100,8 +100,20 @@ namespace ExcelManipulater
                     DataRow row = sheetData.NewRow();
                     for (columnCount = 1; columnCount <= range.Columns.Count; columnCount++)
                     {
-                        object cell = (range.Cells[rowCount, columnCount] as Excel.Range).Value2;
-                        row[columnCount - 1] = cell != null ? (range.Cells[rowCount, columnCount] as Excel.Range).Value2.ToString() : String.Empty;
+                        object cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value2;
+                        double textColor = 0;
+                        if (cellText == null)
+                        {
+                            cellText = String.Empty;
+                        }
+                        else
+                        {
+                            cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value2.ToString();
+                            textColor = (range.Cells[rowCount, columnCount] as Excel.Range).Font.Color;
+                        }
+                        var cell = new[] {cellText, textColor };
+                        row[columnCount - 1] = cell;
+                        //row[columnCount - 1] = cellText != null ? (range.Cells[rowCount, columnCount] as Excel.Range).Value2.ToString() : String.Empty;
                     }
                     sheetData.Rows.Add(row);
                 }
