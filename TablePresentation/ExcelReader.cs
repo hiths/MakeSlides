@@ -2,6 +2,8 @@
 using System.IO;
 using System.Data;
 using Excel = Microsoft.Office.Interop.Excel;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace ExcelManipulater
 {
@@ -100,20 +102,25 @@ namespace ExcelManipulater
                     DataRow row = sheetData.NewRow();
                     for (columnCount = 1; columnCount <= range.Columns.Count; columnCount++)
                     {
-                        object cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value2;
+                        object cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value;
                         double textColor = 0;
+                        string textFormat = "@";
                         if (cellText == null)
                         {
                             cellText = String.Empty;
                         }
                         else
                         {
-                            cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value2.ToString();
+                            cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value.ToString();
                             textColor = (range.Cells[rowCount, columnCount] as Excel.Range).Font.Color;
+                            textFormat = (range.Cells[rowCount, columnCount] as Excel.Range).NumberFormatLocal;
                         }
-                        var cell = new[] {cellText, textColor };
+                        var cell = new {text = cellText, color = textColor, format = textFormat};
+                        //var cell = new[] { cellText, textColor, textFormat };
+                        //string[] cell = new string[1] { "1" };
+                        //cell.SetValue(textColor);
+                        //Console.WriteLine("{0},{1},{2}", cell.text, cell.color, cell.format);
                         row[columnCount - 1] = cell;
-                        //row[columnCount - 1] = cellText != null ? (range.Cells[rowCount, columnCount] as Excel.Range).Value2.ToString() : String.Empty;
                     }
                     sheetData.Rows.Add(row);
                 }

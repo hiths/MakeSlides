@@ -20,10 +20,18 @@ namespace TestForExcelManipulater
                 foreach (DataTable dt in sheets.Tables)
                 {
                     Console.WriteLine(dt.TableName.ToString());
+                    foreach (DataRow dr in dt.Rows)
+                    {
+                        Console.WriteLine("line {0}:", dt.Rows.IndexOf(dr));
+                        for(int i = 0; i < dt.Columns.Count; i++)
+                        {
+                            Console.WriteLine("{0},{1}", dr[i].ToString(), dr[i].GetType());
+                            //Console.WriteLine(dr[i].ToString());
+                        }
+                    }       
                 }
-                //ExcelWriter.ExportDataToExcel(sheets, "copy.xls");
+                //ExcelWriter.ExportDataToExcel(sheets, "copy.xlsx");
             }
-
             Console.WriteLine("Finish");
             Console.ReadKey();
         }
