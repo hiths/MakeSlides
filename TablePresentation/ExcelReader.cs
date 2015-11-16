@@ -2,8 +2,6 @@
 using System.IO;
 using System.Data;
 using Excel = Microsoft.Office.Interop.Excel;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace ExcelManipulater
 {
@@ -92,7 +90,10 @@ namespace ExcelManipulater
 
             for (int i = 0; i < range.Columns.Count; i++)
             {
-                sheetData.Columns.Add(new DataColumn());
+                //sheetData.Columns.Add(new DataColumn()); 
+                DataColumn column = new DataColumn();
+                column.DataType = Type.GetType("System.Object");
+                sheetData.Columns.Add(column);
             }
 
             try
@@ -117,8 +118,6 @@ namespace ExcelManipulater
                         }
                         var cell = new {text = cellText, color = textColor, format = textFormat};
                         //var cell = new[] { cellText, textColor, textFormat };
-                        //string[] cell = new string[1] { "1" };
-                        //cell.SetValue(textColor);
                         //Console.WriteLine("{0},{1},{2}", cell.text, cell.color, cell.format);
                         row[columnCount - 1] = cell;
                     }

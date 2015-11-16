@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Data;
 using ExcelManipulater;
-using System.IO;
 
 namespace TestForExcelManipulater
 {
@@ -25,7 +21,7 @@ namespace TestForExcelManipulater
                         Console.WriteLine("line {0}:", dt.Rows.IndexOf(dr));
                         for(int i = 0; i < dt.Columns.Count; i++)
                         {
-                            Console.WriteLine("{0},{1}", dr[i].ToString(), dr[i].GetType());
+                            Console.WriteLine("{0},{1}", ((dynamic)dr[i]).text, dr[i].GetType());
                             //Console.WriteLine(dr[i].ToString());
                         }
                     }       
