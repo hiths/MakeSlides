@@ -15,20 +15,23 @@ namespace TestForExcelManipulater
             {
                 for (int i = 0; i < dt.Columns.Count; i++)
                 {
-                    //((dynamic)dr[i]).format;
-                    string text = ((dynamic)dr[i]).text;
-                    string format = ((dynamic)dr[i]).format;
+                    //string text = ((dynamic)dr[i]).text;
+                    //string format = ((dynamic)dr[i]).format;
+                    ((dynamic)dr[i])[1] = Convert.ToInt32(((dynamic)dr[i])[1]);
+                    string text = ((dynamic)dr[i])[0];
+                    string format = ((dynamic)dr[i])[2];
                     if (text.IndexOf(".") != -1 && text.IndexOf(".") == text.LastIndexOf("."))
                     {
-                        string[] spstr = text.Split(new char[] {'.'});
-                        if(format == "0.00 % ")
+                        
+                        if(format.IndexOf("%") != -1)
                         {
-                            ((dynamic)dr[i]).text = spstr[0] + spstr[1].Substring(4);
+                            ((dynamic)dr[i])[2] = "0.00 % ";
+                            ((dynamic)dr[i])[0] =Math.Round(double.Parse(text), 4, MidpointRounding.AwayFromZero).ToString();
                         }
                         else
                         {
-                            ((dynamic)dr[i]).text = spstr[0] + spstr[1].Substring(2);
-                        }
+                            ((dynamic)dr[i])[0] = Math.Round(double.Parse(text), 2, MidpointRounding.AwayFromZero).ToString();
+                        }   
                     }
                 }
             }

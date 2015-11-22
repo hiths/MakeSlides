@@ -119,9 +119,8 @@ namespace ExcelManipulater
                             textColor = (range.Cells[rowCount, columnCount] as Excel.Range).Font.Color;
                             textFormat = (range.Cells[rowCount, columnCount] as Excel.Range).NumberFormatLocal;
                         }
-                        var cell = new {text = cellText, color = textColor, format = textFormat};
-                        //var cell = new[] { cellText, textColor, textFormat };
-
+                        //var cell = new {text = cellText, color = textColor, format = textFormat};
+                        var cell = new[] { cellText, textColor, textFormat };
                         row[columnCount - 1] = cell;
                     }
                     sheetData.Rows.Add(row);
