@@ -91,7 +91,10 @@ namespace ExcelManipulater
             for (int i = 0; i < range.Columns.Count; i++)
             {
                 //sheetData.Columns.Add(new DataColumn()); 
+                object cell = (range.Cells[1, i+1] as Excel.Range).Value2;
+                string columnName = cell != null ? (range.Cells[1, i+1] as Excel.Range).Value2.ToString() : String.Empty;
                 DataColumn column = new DataColumn();
+                column.ColumnName = columnName;
                 column.DataType = Type.GetType("System.Object");
                 sheetData.Columns.Add(column);
             }
