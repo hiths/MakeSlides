@@ -21,7 +21,7 @@ namespace TestForExcelManipulater
                         Console.WriteLine("line {0}:", dt.Rows.IndexOf(dr));
                         for(int i = 0; i < dt.Columns.Count; i++)
                         {
-                            Console.WriteLine("{0},{1}", ((dynamic)dr[i]).format, dr[i].GetType());
+                            Console.WriteLine("{0},{1}", ((dynamic)dr[i]).text, dr[i].GetType());
                             //Console.WriteLine(dr[i].ToString());
                         }
                     }       

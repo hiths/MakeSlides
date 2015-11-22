@@ -118,7 +118,7 @@ namespace ExcelManipulater
                         }
                         var cell = new {text = cellText, color = textColor, format = textFormat};
                         //var cell = new[] { cellText, textColor, textFormat };
-                        //Console.WriteLine("{0},{1},{2}", cell.text, cell.color, cell.format);
+
                         row[columnCount - 1] = cell;
                     }
                     sheetData.Rows.Add(row);
