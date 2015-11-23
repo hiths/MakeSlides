@@ -37,22 +37,29 @@ namespace TestForExcelManipulater
             }
         }
 
-        static void Main(string[] args)
+        public static DataSet ReadExcel(string excelFile)
         {
-            string fileName = Environment.CurrentDirectory + "\\a.xlsx";
-            Console.WriteLine(fileName);
-            DataSet sheets = ExcelReader.ImportDataFromAllSheets(fileName);
+            Console.WriteLine("reading excel file named: {0}", excelFile);
+            DataSet sheets = ExcelReader.ImportDataFromAllSheets(excelFile);
+            string json = String.Empty;
             if (sheets != null)
             {
                 foreach (DataTable dt in sheets.Tables)
                 {
                     regulateData(dt);
-                    string ss = JsonConvert.SerializeObject(dt, Formatting.Indented);
-                    Console.WriteLine(ss);
-                    File.WriteAllText(Environment.CurrentDirectory + @"WriteText.json", ss);
                 }
-                //ExcelWriter.ExportDataToExcel(sheets, "copy.xlsx");
+                json = JsonConvert.SerializeObject(sheets, Formatting.Indented);
+                Console.WriteLine("--Data is being written to json file--");
+                File.WriteAllText(excelFile + @".json", json);
+                Console.WriteLine("--Write operation is complete--");
             }
+            return sheets;
+        }
+
+        static void Main(string[] args)
+        {
+            string fileName = Environment.CurrentDirectory + "\\a.xlsx";
+            ReadExcel(fileName);
             Console.WriteLine("Finish");
             Console.ReadKey();
         }
