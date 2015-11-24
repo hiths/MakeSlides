@@ -17,16 +17,28 @@ namespace PowerPointOperator
             PowerPoint.Presentation pptPrest = appPPT.Presentations.Open(filePath, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoCTrue);
         }
 
-        public static void addSilde(PowerPoint.Presentation pptPrest, int pageIndex, string title, DataRow titleRow, int game)
+        public static void addSilde(PowerPoint.Presentation pptPrest, int pageIndex, string title, DataRow titleContent, int game)
         {
             pptPrest.Slides[game].Copy();
             pptPrest.Slides.Paste(pageIndex);
-            addRow(pptPrest, pageIndex, titleRow, 1);
+            addContent(pptPrest, pageIndex, 1, titleContent);
         }
 
-        public static void addRow(PowerPoint.Presentation pptPrest, int pageIndex, DataRow dataRow, int rowIndex = -1)
+        public static void addRow(PowerPoint.Presentation pptPrest, int pageIndex, DataRow rowContent)
         {
+            pptPrest.Slides[pageIndex].Shapes[1].Table.Rows.Add(-1);
+            addContent(pptPrest, pageIndex, -1, rowContent);
+        }
 
+        public static void addContent(PowerPoint.Presentation pptPrest, int pageIndex, int rowIndex, DataRow content)
+        {
+            int columnCount = pptPrest.Slides[pageIndex].Shapes[1].Table.Columns.Count;
+            for(int i = 0; i < columnCount; i++)
+            {
+                pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i).Shape.TextFrame.TextRange.Text= ((dynamic)content[i])["text"];
+                pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i).Shape.TextFrame.TextRange.Font.Color.RGB = ((dynamic)content[i])["color"]; //RGB(0, 0, 255)
+                //pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i).Shape. to be continued
+            }
         }
 
         private static void Dispose(string fileName, ref PowerPoint.Application appPPT, ref PowerPoint.Presentation pptPrest)

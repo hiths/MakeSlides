@@ -5,17 +5,19 @@ using ExcelManipulater;
 using PowerPointOperator;
 using Newtonsoft.Json;
 using System.Linq;
+using System.Collections.Generic;
 
-namespace TestForExcelManipulater
+namespace MakeSlidesFromExcel
 {
     class Program
     {
+
         //must static 
-        public static void regulateData(DataTable dt)
+        public static void regulateData(DataTable dt, int width = 0)
         {
             foreach (DataRow dr in dt.Rows)
             {
-                for (int i = 0; i < dt.Columns.Count; i++)
+                for (int i = 0; i < width; i++)
                 {
                     ((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
                     string text = ((dynamic)dr[i])["text"];
@@ -46,10 +48,10 @@ namespace TestForExcelManipulater
             {
                 if (whiteList != null)
                 {
-                    //foreach (DataTable dt in sheets.Tables)
                     for(int i = sheets.Tables.Count-1; i >= 0; i --)
                     {
-                        if (!whiteList.Contains(sheets.Tables[i].TableName))
+                        string tableName = sheets.Tables[i].TableName;
+                        if (!whiteList.Contains(tableName))
                         {
                             sheets.Tables.Remove(sheets.Tables[i]);
                         }
@@ -74,13 +76,21 @@ namespace TestForExcelManipulater
             return sheets;
         }
 
+        public static DataSet makeStucture(DataSet sheets, string json = null)
+        {
+            DataSet structure = new DataSet();
+            return structure;
+        }
+
         static void Main(string[] args)
         {
-            //string excelName = Environment.CurrentDirectory + "\\a.xlsx";
-            //string[] games = new string[2] { "大皇帝", "少年三国志"};
-            //DataSet sheets = ReadExcel(excelName,games);
+            string excelName = Environment.CurrentDirectory + "\\a.xlsx";
+            string[] games = new string[2] { "大皇帝", "少年三国志"};
+            DataSet sheets = ReadExcel(excelName,games);
+            /*
             string pptName = Environment.CurrentDirectory + "\\test.pptx";
             SlidesEditer.openPPT(pptName);
+            */
             Console.WriteLine("Finish");
             Console.ReadKey();
         }
