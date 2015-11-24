@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Data;
+using Newtonsoft.Json;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Collections.Generic;
 
@@ -12,6 +13,12 @@ namespace ExcelManipulater
         {
             xlApp = new Excel.Application();
             xlWorkBook = xlApp.Workbooks.Open(fileName, 0, true, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+        }
+
+        public static string ToJson(string fileName)
+        {
+            string json = JsonConvert.SerializeObject(ImportDataFromAllSheets(fileName), Formatting.Indented);
+            return json;
         }
 
         public static DataSet ImportDataFromAllSheets(string fileName)
@@ -28,12 +35,12 @@ namespace ExcelManipulater
             int workSheetNum = xlWorkBook.Worksheets.Count;
             int sheetCount=0;
             DataSet sheets = new DataSet();
-            Console.WriteLine("WorkSheet number:" + workSheetNum);
+            Console.WriteLine("Sheet number: " + workSheetNum);
             try
             {
                 for (sheetCount = 1; sheetCount <= workSheetNum; sheetCount++)
                 {
-                    Console.WriteLine("Reading sheet" + sheetCount);
+                    Console.WriteLine("Reading sheet{0}: {1}", sheetCount, xlWorkBook.Sheets[sheetCount].Name);
                     DataTable sheetData = ExtractDataFromSingleSheet(xlWorkBook, sheetCount);
                     sheets.Tables.Add(sheetData);
                 }
