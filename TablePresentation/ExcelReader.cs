@@ -2,6 +2,7 @@
 using System.IO;
 using System.Data;
 using Excel = Microsoft.Office.Interop.Excel;
+using System.Collections.Generic;
 
 namespace ExcelManipulater
 {
@@ -108,7 +109,7 @@ namespace ExcelManipulater
                     {
                         object cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value;
                         double textColor = 0;
-                        string textFormat = "@";
+                        string textFormat = "G/通用格式";
                         if (cellText == null)
                         {
                             cellText = String.Empty;
@@ -119,8 +120,9 @@ namespace ExcelManipulater
                             textColor = (range.Cells[rowCount, columnCount] as Excel.Range).Font.Color;
                             textFormat = (range.Cells[rowCount, columnCount] as Excel.Range).NumberFormatLocal;
                         }
-                        //var cell = new {text = cellText, color = textColor, format = textFormat};
-                        var cell = new[] { cellText, textColor, textFormat };
+                        //var cell = new {text = cellText, color = textColor, format = textFormat}; attributes read-only
+                        //var cell = new[] { cellText, textColor, textFormat };
+                        var cell = new Dictionary<string, object> { { "text", cellText }, { "color", textColor}, { "format", textFormat } };
                         row[columnCount - 1] = cell;
                     }
                     sheetData.Rows.Add(row);
