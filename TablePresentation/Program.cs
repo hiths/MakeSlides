@@ -2,7 +2,9 @@
 using System.Data;
 using System.IO;
 using ExcelManipulater;
+using PowerPointOperator;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace TestForExcelManipulater
 {
@@ -35,16 +37,34 @@ namespace TestForExcelManipulater
             }
         }
 
-        public static DataSet ReadExcel(string excelFile)
+        public static DataSet ReadExcel(string excelFile, string[] whiteList = null)
         {
             Console.WriteLine("reading excel file named: {0}", excelFile);
             DataSet sheets = ExcelReader.ImportDataFromAllSheets(excelFile);
             string json = String.Empty;
             if (sheets != null)
             {
-                foreach (DataTable dt in sheets.Tables)
+                if (whiteList != null)
                 {
-                    regulateData(dt);
+                    //foreach (DataTable dt in sheets.Tables)
+                    for(int i = sheets.Tables.Count-1; i >= 0; i --)
+                    {
+                        if (!whiteList.Contains(sheets.Tables[i].TableName))
+                        {
+                            sheets.Tables.Remove(sheets.Tables[i]);
+                        }
+                        else
+                        {
+                            regulateData(sheets.Tables[i]);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (DataTable dt in sheets.Tables)
+                    {
+                        regulateData(dt);
+                    }
                 }
                 json = JsonConvert.SerializeObject(sheets, Formatting.Indented);
                 Console.WriteLine("--Data is being written to json file--");
@@ -56,8 +76,11 @@ namespace TestForExcelManipulater
 
         static void Main(string[] args)
         {
-            string fileName = Environment.CurrentDirectory + "\\a.xlsx";
-            ReadExcel(fileName);
+            //string excelName = Environment.CurrentDirectory + "\\a.xlsx";
+            //string[] games = new string[2] { "大皇帝", "少年三国志"};
+            //DataSet sheets = ReadExcel(excelName,games);
+            string pptName = Environment.CurrentDirectory + "\\test.pptx";
+            SlidesEditer.openPPT(pptName);
             Console.WriteLine("Finish");
             Console.ReadKey();
         }
