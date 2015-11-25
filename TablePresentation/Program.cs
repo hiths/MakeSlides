@@ -6,20 +6,29 @@ using PowerPointOperator;
 using Newtonsoft.Json;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.Office.Core;
+using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 
 namespace MakeSlidesFromExcel
 {
     class Program
     {
-        private Dictionary<string, int> games;
+        private static Dictionary<string, int> games;
+        private static int gamesCount;// = games.Keys.Count;
+        private static string configFile = "";
 
-        public static Dictionary<string, int> getCustomization(string filePath)
+        public static void initial()
         {
-
-            //return getCustomization;
+            games = getCustomization(configFile);
         }
 
-        //must static 
+        public static Dictionary<string, int> getCustomization(string customizationFilePath)
+        {
+            Dictionary<string, int> customization = new Dictionary<string, int>();
+            //json to dict
+            return customization;
+        }
+
         public static void regulateData(DataTable dt, int width = 0)
         {
             foreach (DataRow dr in dt.Rows)
@@ -83,59 +92,98 @@ namespace MakeSlidesFromExcel
             return sheets;
         }
 
-        public static DataSet makeStructure(DataSet newSheets, DataSet exsitedStructure = null)
+        public static DataSet insertTableToSet(DataSet ds, DataTable dt, int index)
         {
-            DataSet newStructure = new DataSet();
-            if(exsitedStructure != null)
+            if(index < 0 | index > ds.Tables.Count)
             {
-                Dictionary<string, string[]> slidesIndex = miniStructure(exsitedStructure);
+                ds.Tables.Add(dt);
+                return ds;
+            }
+            else
+            {
+                DataSet newDataSet = new DataSet();
+                for(int i = 0; i < index; i++)
+                {
+                    newDataSet.Tables.Add(ds.Tables[i]);
+                }
+                newDataSet.Tables.Add(dt);
+                for(int i = index; i < ds.Tables.Count; i++)
+                {
+                    newDataSet.Tables.Add(ds.Tables[i]);
+                }
+                return newDataSet;
+            }
+        }
+
+        public static DataSet makeStructure(PowerPoint.Presentation pptPrest, DataSet newSheets, DataSet structure = null)
+        {
+            if(structure != null)
+            {
+                List<object> slidesIndex = getSlidesIndex(structure);
+
                 for (int i = 0; i < newSheets.Tables.Count; i++)
                 {
-                    string game = exsitedStructure.Tables[i].TableName.Split(new char[1] { '-' })[0];
-                    if (slidesIndex.Keys.Contains(game))
+                    string game = structure.Tables[i].TableName.Split(new char[1] { '-' })[0];
+                     
+                    if (((dynamic)slidesIndex[0]).Contains(game))
                     {
                         for (int j = 1; j < newSheets.Tables[i].Rows.Count; j ++ )
                         {
-                            string mat = ((dynamic)newSheets.Tables[i].Rows[j])[0]["text"];
+                            string column_0 = ((dynamic)newSheets.Tables[i].Rows[j])[0]["text"];
                             DataRow dr = newSheets.Tables[i].Rows[j];
-                            if (slidesIndex[game].Contains(mat))
+                            if (((dynamic)slidesIndex[1]).Contains(column_0) && ((dynamic)slidesIndex[0])[((dynamic)slidesIndex[1]).IndexOf(column_0)] == game)
                             {
-
+                                int index = ((dynamic)slidesIndex[1]).IndexOf(column_0);
+                                structure.Tables[index].Rows.Add(dr);
+                            }
+                            else
+                            {
+                                int index = ((dynamic)slidesIndex[0]).LastIndexOf(game);
+                                DataTable newTable = new DataTable(game + "-" + column_0);
+                                newTable.Rows.Add(newSheets.Tables[i].Rows[0]);
+                                newTable.Rows.Add(dr);
+                                insertTableToSet(structure, newTable, index);
                             }
                         }
                     }
-
                 }
             }
-            else {
+            else
+            {
                 for (int i = 0; i < newSheets.Tables.Count; i++)
                 {
                     DataTable dt = newSheets.Tables[i]; 
                     for (int j = 1; j < dt.Rows.Count; j++)
                     {
                         DataTable newTable = new DataTable(); // in or out of for sentance ?
-                        newTable.TableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])["text"];
+                        newTable.TableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
                         newTable.Rows.Add(dt.Rows[0]);
                         newTable.Rows.Add(dt.Rows[j]);
-                        newStructure.Tables.Add(newTable);
+                        structure.Tables.Add(newTable);
+                        SlidesEditer.addSilde(pptPrest, j + gamesCount, newTable.TableName, dt.Rows[0], 2);
+                        SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
                     }
                 }
             }
-            return newStructure;
+            return structure;
         }
 
-        public static Dictionary<string, string[]>  miniStructure(DataSet struture)
+        public static List<object> getSlidesIndex(DataSet structure)
         {
-            Dictionary<string, string[]> miniStructure = new Dictionary<string, string[]>();
-
-            return miniStructure;
-        }
-
-        public static string[] getSlidesIndex(DataSet structure)
-        {
-            int k = structure.Tables.Count;
-            /string[] sildesIndex = new string[]();
-            /return slidesIndex;
+            List<object> slidesIndex = new List<object>();
+            List<string> games = new List<string>();
+            List<string> material = new List<string>();
+            List<int> rowCount = new List<int>();
+            for (int i = 0; i < structure.Tables.Count; i++)
+            {
+                games[i] = structure.Tables[i].TableName.Split(new char[1] { '-' })[0];
+                material[i] = structure.Tables[i].TableName.Split(new char[1] { '-' })[1];
+                rowCount[i] = structure.Tables[i].Rows.Count;
+            }
+            slidesIndex.Add(games);
+            slidesIndex.Add(material);
+            slidesIndex.Add(rowCount);
+            return slidesIndex;
         }
 
         static void Main(string[] args)
