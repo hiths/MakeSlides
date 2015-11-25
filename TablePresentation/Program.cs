@@ -11,6 +11,13 @@ namespace MakeSlidesFromExcel
 {
     class Program
     {
+        private Dictionary<string, int> games;
+
+        public static Dictionary<string, int> getCustomization(string filePath)
+        {
+
+            //return getCustomization;
+        }
 
         //must static 
         public static void regulateData(DataTable dt, int width = 0)
@@ -41,7 +48,7 @@ namespace MakeSlidesFromExcel
 
         public static DataSet ReadExcel(string excelFile, string[] whiteList = null)
         {
-            Console.WriteLine("reading excel file named: {0}", excelFile);
+            Console.WriteLine("reading excel file : {0}", excelFile);
             DataSet sheets = ExcelReader.ImportDataFromAllSheets(excelFile);
             string json = String.Empty;
             if (sheets != null)
@@ -76,10 +83,59 @@ namespace MakeSlidesFromExcel
             return sheets;
         }
 
-        public static DataSet makeStucture(DataSet sheets, string json = null)
+        public static DataSet makeStructure(DataSet newSheets, DataSet exsitedStructure = null)
         {
-            DataSet structure = new DataSet();
-            return structure;
+            DataSet newStructure = new DataSet();
+            if(exsitedStructure != null)
+            {
+                Dictionary<string, string[]> slidesIndex = miniStructure(exsitedStructure);
+                for (int i = 0; i < newSheets.Tables.Count; i++)
+                {
+                    string game = exsitedStructure.Tables[i].TableName.Split(new char[1] { '-' })[0];
+                    if (slidesIndex.Keys.Contains(game))
+                    {
+                        for (int j = 1; j < newSheets.Tables[i].Rows.Count; j ++ )
+                        {
+                            string mat = ((dynamic)newSheets.Tables[i].Rows[j])[0]["text"];
+                            DataRow dr = newSheets.Tables[i].Rows[j];
+                            if (slidesIndex[game].Contains(mat))
+                            {
+
+                            }
+                        }
+                    }
+
+                }
+            }
+            else {
+                for (int i = 0; i < newSheets.Tables.Count; i++)
+                {
+                    DataTable dt = newSheets.Tables[i]; 
+                    for (int j = 1; j < dt.Rows.Count; j++)
+                    {
+                        DataTable newTable = new DataTable(); // in or out of for sentance ?
+                        newTable.TableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])["text"];
+                        newTable.Rows.Add(dt.Rows[0]);
+                        newTable.Rows.Add(dt.Rows[j]);
+                        newStructure.Tables.Add(newTable);
+                    }
+                }
+            }
+            return newStructure;
+        }
+
+        public static Dictionary<string, string[]>  miniStructure(DataSet struture)
+        {
+            Dictionary<string, string[]> miniStructure = new Dictionary<string, string[]>();
+
+            return miniStructure;
+        }
+
+        public static string[] getSlidesIndex(DataSet structure)
+        {
+            int k = structure.Tables.Count;
+            /string[] sildesIndex = new string[]();
+            /return slidesIndex;
         }
 
         static void Main(string[] args)
