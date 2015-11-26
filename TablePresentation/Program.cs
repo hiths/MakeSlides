@@ -14,7 +14,7 @@ namespace MakeSlidesFromExcel
 {
     class Program
     {
-        private static Dictionary<string, int[]> gameConfig;
+        private static Dictionary<string, int[]> gameConfig = new Dictionary<string, int[]>();
         private static int gamesCount = 0;
         private static List<string> gameList = new List<string>();
         private static string configFile = Environment.CurrentDirectory + "\\GamesInfo.json";
@@ -89,6 +89,13 @@ namespace MakeSlidesFromExcel
 
         public static DataSet ReadExcel(string excelFile, List<string> whiteList = null)
         {
+            if (!File.Exists(excelFile))
+            {
+                Console.WriteLine("Can not find specified excel file.");
+                Console.ReadKey();
+                //return null;
+                Environment.Exit(0);
+            }
             Console.WriteLine("reading excel file : {0}", excelFile);
             DataSet sheets = ExcelReader.ImportDataFromAllSheets(excelFile);
             string json = String.Empty;
@@ -138,12 +145,12 @@ namespace MakeSlidesFromExcel
                 DataSet newDataSet = new DataSet();
                 for(int i = 0; i < index; i++)
                 {
-                    newDataSet.Tables.Add(ds.Tables[i]);
+                    newDataSet.Tables.Add(ds.Tables[i].Copy());
                 }
                 newDataSet.Tables.Add(dt);
                 for(int i = index; i < ds.Tables.Count; i++)
                 {
-                    newDataSet.Tables.Add(ds.Tables[i]);
+                    newDataSet.Tables.Add(ds.Tables[i].Copy());
                 }
                 return newDataSet;
             }
@@ -187,23 +194,93 @@ namespace MakeSlidesFromExcel
                 structure = new DataSet();
                 for (int i = 0; i < newSheets.Tables.Count; i++)
                 {
-                    DataTable dt = newSheets.Tables[i]; 
-                    for (int j = 1; j < dt.Rows.Count; j++)
+                    DataTable dt = newSheets.Tables[i];
+                    // web games
+                    if ((gameConfig[dt.TableName])[1] == 0)
                     {
-                        DataTable newTable = new DataTable(); // in or out of for sentance ?
-                        for(int k = 0; k< dt.Columns.Count; k++)
+                        for (int j = 2; j < dt.Rows.Count; j++)
                         {
-                            DataColumn column = new DataColumn();
-                            column.DataType = Type.GetType("System.Object");
-                            newTable.Columns.Add(column);
+                            string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
+                            if (structure.Tables.Contains(newTableName))
+                            {
+                                structure.Tables[newTableName].Rows.Add(dt.Rows[j].ItemArray);
+                            }
+                            else
+                            {
+                                DataTable newTable = new DataTable(); // in or out of for sentance ?
+                                for (int k = 0; k < dt.Columns.Count; k++)
+                                {
+                                    DataColumn column = new DataColumn();
+                                    column.DataType = Type.GetType("System.Object");
+                                    column.ColumnName = ((dynamic)dt.Rows[0])[k]["text"];
+                                    newTable.Columns.Add(column);
+                                }
+                                newTable.TableName = newTableName;
+                                newTable.Rows.Add(dt.Rows[0].ItemArray);
+                                newTable.Rows.Add(dt.Rows[j].ItemArray);
+                                structure.Tables.Add(newTable);
+                                //SlidesEditer.addSilde(pptPrest, j + gamesCount, newTable.TableName, dt.Rows[0], 2);
+                                //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
+                            }
+
                         }
-                        newTable.TableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
-                        newTable.Rows.Add(dt.Rows[0].ItemArray);
-                        newTable.Rows.Add(dt.Rows[j].ItemArray);
-                        structure.Tables.Add(newTable);
-                        //SlidesEditer.addSilde(pptPrest, j + gamesCount, newTable.TableName, dt.Rows[0], 2);
-                        //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
                     }
+                    else
+                    //mobile games
+                    {
+                        int rowCount = dt.Rows.Count;
+                        Dictionary<string, int> channelRowCountDict = new Dictionary<string, int>();
+                        for (int j = 2; j < rowCount; j++)
+                        {
+                            string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[1]["text"];
+                            if (channelRowCountDict.Keys.Contains(newTableName))
+                            {
+                                int firstPageIndex = structure.Tables.IndexOf(newTableName);
+                                int channelRowCount = channelRowCountDict[newTableName];
+
+                                if(channelRowCount%3 == 0)
+                                {
+                                    DataTable newTable = new DataTable();
+                                    newTable.TableName = newTableName + "[" + (channelRowCount / 3).ToString() +"]";
+                                    for (int k = 0; k < dt.Columns.Count; k++)
+                                    {
+                                        DataColumn column = new DataColumn();
+                                        column.DataType = Type.GetType("System.Object");
+                                        column.ColumnName = ((dynamic)dt.Rows[0])[k]["text"];
+                                        newTable.Columns.Add(column);
+                                    }
+                                    newTable.Rows.Add(dt.Rows[0].ItemArray);
+                                    newTable.Rows.Add(dt.Rows[j].ItemArray);
+                                    int insertPageIndex = firstPageIndex + channelRowCount / 3;
+                                    insertTableToSet(structure, newTable, insertPageIndex);                                
+                                }
+                                else
+                                {
+                                    int n = firstPageIndex - 1 + channelRowCount / 3;
+                                    DataTable newTable = structure.Tables[n];
+                                    newTable.Rows.Add(dt.Rows[j].ItemArray);
+                                }
+                                channelRowCountDict[newTableName] += 1;
+                            }
+                            else
+                            {
+                                DataTable newTable = new DataTable();
+                                newTable.TableName = newTableName;
+                                for (int k = 0; k < dt.Columns.Count; k++)
+                                {
+                                    DataColumn column = new DataColumn();
+                                    column.DataType = Type.GetType("System.Object");
+                                    column.ColumnName = ((dynamic)dt.Rows[0])[k]["text"];
+                                    newTable.Columns.Add(column);
+                                }
+                                newTable.Rows.Add(dt.Rows[0].ItemArray);
+                                newTable.Rows.Add(dt.Rows[j].ItemArray);
+                                channelRowCountDict.Add(newTableName, 1);
+                                structure.Tables.Add(newTable);
+                            }
+                        }                   
+                    }
+                        
                 }
                 
             }
@@ -233,21 +310,22 @@ namespace MakeSlidesFromExcel
         public static DataSet jsonToStructure(string slidesMapJson)
         {
             DataSet structure = new DataSet();
+            Dictionary<string, object> structureDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(slidesMapJson);
             return structure;
         }
 
         static void Main(string[] args)
         {
             initialize();
-            string excelName = Environment.CurrentDirectory + "\\b.xlsx";
+            string excelName = Environment.CurrentDirectory + "\\a.xlsx";
             
             
             string pptName = Environment.CurrentDirectory + "\\test.pptx";
             PowerPoint.Presentation ppt = SlidesEditer.openPPT(pptName);
             DataSet sheets = ReadExcel(excelName, gameList);
-            string rawJson = File.ReadAllText(@"SlidesMap.json");
-            Dictionary<string, object> structure = JsonConvert.DeserializeObject<Dictionary<string, object>>(rawJson);
-            //makeStructure(ppt,sheets, structure);
+            //string rawJson = File.ReadAllText(@"SlidesMap.json");
+            //DataSet structure = JsonConvert.DeserializeObject<DataSet>(rawJson);
+            makeStructure(ppt,sheets);
             Console.WriteLine("Finish");
             Console.ReadKey();
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.IO;
 using Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 
@@ -12,6 +13,13 @@ namespace PowerPointOperator
 
         public static PowerPoint.Presentation openPPT(string filePath)
         {
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine("Please put the PowerPoint templet file in the root directory.");
+                Console.ReadKey();
+                //return null;
+                Environment.Exit(0);
+            }
             PowerPoint.Application appPPT = new PowerPoint.Application();
             appPPT.Visible = MsoTriState.msoCTrue;
             PowerPoint.Presentation pptPrest = appPPT.Presentations.Open(filePath, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoCTrue);

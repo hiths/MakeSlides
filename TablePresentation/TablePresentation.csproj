@@ -79,6 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="bin\Debug\GamesInfo.json" />
     <None Include="packages.config" />
     <None Include="Properties\app.manifest" />
   </ItemGroup>
