@@ -10,11 +10,12 @@ namespace PowerPointOperator
         PowerPoint.Application appPPT = null;
         PowerPoint.Presentation pptPrest = null;
 
-        public static void openPPT(string filePath)
+        public static PowerPoint.Presentation openPPT(string filePath)
         {
             PowerPoint.Application appPPT = new PowerPoint.Application();
             appPPT.Visible = MsoTriState.msoCTrue;
             PowerPoint.Presentation pptPrest = appPPT.Presentations.Open(filePath, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoCTrue);
+            return pptPrest;
         }
 
         public static void addSilde(PowerPoint.Presentation pptPrest, int pageIndex, string title, DataRow titleContent, int game)

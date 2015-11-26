@@ -8,28 +8,60 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
+using Newtonsoft.Json.Linq;
 
 namespace MakeSlidesFromExcel
 {
     class Program
     {
-        private static Dictionary<string, int> games;
-        private static int gamesCount;// = games.Keys.Count;
-        private static string configFile = "";
+        private static Dictionary<string, int[]> gameConfig;
+        private static int gamesCount = 0;
+        private static List<string> gameList = new List<string>();
+        private static string configFile = Environment.CurrentDirectory + "\\GamesInfo.json";
+        private static string structureFile = Environment.CurrentDirectory + "\\SlidesMap.json";
+        //private static string configFileFolder = "Customized";
+        //private static string backupFolder = "Backup";
+        //private static string outputFolder = "OutPut";
+        private static string projectFolder = Environment.CurrentDirectory + "\\Project";
 
-        public static void initial()
+        public static void initialize()
         {
-            games = getCustomization(configFile);
+            if (File.Exists(configFile))
+            {
+                gameConfig = getConfigFile(configFile);
+                gamesCount = gameConfig.Keys.Count;
+                foreach(string game in gameConfig.Keys)
+                {
+                    Console.WriteLine(game);
+                    gameList.Add(game);
+                }
+            }
+            else
+            {
+                File.Create(configFile);
+                Console.WriteLine("Build a config file before the initialization of a project.");
+                Console.WriteLine("Press any key to exit.");
+                Console.ReadKey();
+                Environment.Exit(0);
+            }
+
+            if (!File.Exists(projectFolder))
+            {
+                Directory.CreateDirectory(projectFolder);
+            }
+
         }
 
-        public static Dictionary<string, int> getCustomization(string customizationFilePath)
+        public static Dictionary<string, int[]> getConfigFile(string configFilePath)
         {
-            Dictionary<string, int> customization = new Dictionary<string, int>();
-            //json to dict
+            Dictionary<string, int[]> customization = new Dictionary<string, int[]>();
+            string rawJson = File.ReadAllText(@"GamesInfo.json");
+            Console.WriteLine(rawJson);
+            customization = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(rawJson);
             return customization;
         }
 
-        public static void regulateData(DataTable dt, int width = 0)
+        public static void regulateData(DataTable dt, int width = 8)
         {
             foreach (DataRow dr in dt.Rows)
             {
@@ -55,7 +87,7 @@ namespace MakeSlidesFromExcel
             }
         }
 
-        public static DataSet ReadExcel(string excelFile, string[] whiteList = null)
+        public static DataSet ReadExcel(string excelFile, List<string> whiteList = null)
         {
             Console.WriteLine("reading excel file : {0}", excelFile);
             DataSet sheets = ExcelReader.ImportDataFromAllSheets(excelFile);
@@ -73,7 +105,8 @@ namespace MakeSlidesFromExcel
                         }
                         else
                         {
-                            regulateData(sheets.Tables[i]);
+                            int width = ((dynamic)gameConfig[sheets.Tables[i].TableName])[1];
+                            regulateData(sheets.Tables[i], width);
                         }
                     }
                 }
@@ -81,6 +114,7 @@ namespace MakeSlidesFromExcel
                 {
                     foreach (DataTable dt in sheets.Tables)
                     {
+                        int width = ((dynamic)gameConfig[dt.TableName])[1];
                         regulateData(dt);
                     }
                 }
@@ -134,14 +168,14 @@ namespace MakeSlidesFromExcel
                             if (((dynamic)slidesIndex[1]).Contains(column_0) && ((dynamic)slidesIndex[0])[((dynamic)slidesIndex[1]).IndexOf(column_0)] == game)
                             {
                                 int index = ((dynamic)slidesIndex[1]).IndexOf(column_0);
-                                structure.Tables[index].Rows.Add(dr);
+                                structure.Tables[index].Rows.Add(dr.ItemArray);
                             }
                             else
                             {
                                 int index = ((dynamic)slidesIndex[0]).LastIndexOf(game);
                                 DataTable newTable = new DataTable(game + "-" + column_0);
-                                newTable.Rows.Add(newSheets.Tables[i].Rows[0]);
-                                newTable.Rows.Add(dr);
+                                newTable.Rows.Add(newSheets.Tables[i].Rows[0].ItemArray);
+                                newTable.Rows.Add(dr.ItemArray);
                                 insertTableToSet(structure, newTable, index);
                             }
                         }
@@ -150,21 +184,31 @@ namespace MakeSlidesFromExcel
             }
             else
             {
+                structure = new DataSet();
                 for (int i = 0; i < newSheets.Tables.Count; i++)
                 {
                     DataTable dt = newSheets.Tables[i]; 
                     for (int j = 1; j < dt.Rows.Count; j++)
                     {
                         DataTable newTable = new DataTable(); // in or out of for sentance ?
+                        for(int k = 0; k< dt.Columns.Count; k++)
+                        {
+                            DataColumn column = new DataColumn();
+                            column.DataType = Type.GetType("System.Object");
+                            newTable.Columns.Add(column);
+                        }
                         newTable.TableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
-                        newTable.Rows.Add(dt.Rows[0]);
-                        newTable.Rows.Add(dt.Rows[j]);
+                        newTable.Rows.Add(dt.Rows[0].ItemArray);
+                        newTable.Rows.Add(dt.Rows[j].ItemArray);
                         structure.Tables.Add(newTable);
-                        SlidesEditer.addSilde(pptPrest, j + gamesCount, newTable.TableName, dt.Rows[0], 2);
-                        SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
+                        //SlidesEditer.addSilde(pptPrest, j + gamesCount, newTable.TableName, dt.Rows[0], 2);
+                        //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
                     }
                 }
+                
             }
+            string json = JsonConvert.SerializeObject(structure, Formatting.Indented);
+            File.WriteAllText(structureFile, json);
             return structure;
         }
 
@@ -186,15 +230,24 @@ namespace MakeSlidesFromExcel
             return slidesIndex;
         }
 
+        public static DataSet jsonToStructure(string slidesMapJson)
+        {
+            DataSet structure = new DataSet();
+            return structure;
+        }
+
         static void Main(string[] args)
         {
-            string excelName = Environment.CurrentDirectory + "\\a.xlsx";
-            string[] games = new string[2] { "大皇帝", "少年三国志"};
-            DataSet sheets = ReadExcel(excelName,games);
-            /*
+            initialize();
+            string excelName = Environment.CurrentDirectory + "\\b.xlsx";
+            
+            
             string pptName = Environment.CurrentDirectory + "\\test.pptx";
-            SlidesEditer.openPPT(pptName);
-            */
+            PowerPoint.Presentation ppt = SlidesEditer.openPPT(pptName);
+            DataSet sheets = ReadExcel(excelName, gameList);
+            string rawJson = File.ReadAllText(@"SlidesMap.json");
+            Dictionary<string, object> structure = JsonConvert.DeserializeObject<Dictionary<string, object>>(rawJson);
+            //makeStructure(ppt,sheets, structure);
             Console.WriteLine("Finish");
             Console.ReadKey();
         }
