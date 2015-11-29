@@ -129,7 +129,7 @@ namespace ExcelManipulater
                         }
                         //var cell = new {text = cellText, color = textColor, format = textFormat}; attributes read-only
                         //var cell = new[] { cellText, textColor, textFormat };
-                        var cell = new Dictionary<string, object> { { "text", cellText }, { "color", textColor}, { "format", textFormat } };
+                        Dictionary<string, object> cell = new Dictionary<string, object> { { "text", cellText }, { "color", textColor}, { "format", textFormat } };
                         row[columnCount - 1] = cell;
                     }
                     sheetData.Rows.Add(row);

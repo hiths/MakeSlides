@@ -135,7 +135,7 @@ namespace MakeSlidesFromExcel
 
         public static DataSet insertTableToSet(DataSet ds, DataTable dt, int index)
         {
-            if(index < 0 | index > ds.Tables.Count)
+            if(index < 0 | index >= ds.Tables.Count)
             {
                 ds.Tables.Add(dt);
                 return ds;
@@ -158,14 +158,13 @@ namespace MakeSlidesFromExcel
 
         public static DataSet makeStructure(PowerPoint.Presentation pptPrest, DataSet newSheets, DataSet structure = null)
         {
-            if(structure != null)
+            int pageIndexOfThisRow = 0;
+            if (structure != null)
             {
-                List<object> slidesIndex = getSlidesIndex(structure);
-
+                List<object> slidesIndex = getSlidesIndex(structure);        
                 for (int i = 0; i < newSheets.Tables.Count; i++)
                 {
                     string game = structure.Tables[i].TableName.Split(new char[1] { '-' })[0];
-                     
                     if (((dynamic)slidesIndex[0]).Contains(game))
                     {
                         for (int j = 1; j < newSheets.Tables[i].Rows.Count; j ++ )
@@ -204,6 +203,8 @@ namespace MakeSlidesFromExcel
                             if (structure.Tables.Contains(newTableName))
                             {
                                 structure.Tables[newTableName].Rows.Add(dt.Rows[j].ItemArray);
+                                pageIndexOfThisRow = structure.Tables.IndexOf(newTableName);
+                                SlidesEditer.addRow(pptPrest, pageIndexOfThisRow + 2 + gamesCount, dt.Rows[j]);
                             }
                             else
                             {
@@ -218,8 +219,31 @@ namespace MakeSlidesFromExcel
                                 newTable.TableName = newTableName;
                                 newTable.Rows.Add(dt.Rows[0].ItemArray);
                                 newTable.Rows.Add(dt.Rows[j].ItemArray);
-                                structure.Tables.Add(newTable);
-                                //SlidesEditer.addSilde(pptPrest, j + gamesCount, newTable.TableName, dt.Rows[0], 2);
+                                if (gameList[gameList.Count - 1] == dt.TableName)
+                                {
+                                    structure.Tables.Add(newTable);
+                                }
+                                else
+                                {
+                                    for (int a = 0; a < structure.Tables.Count; a++)
+                                    {
+                                        if (structure.Tables[a].TableName.StartsWith(dt.TableName))
+                                        {
+                                            pageIndexOfThisRow = structure.Tables.Count;
+                                            for(int b = a; b < structure.Tables.Count; b++)
+                                            {
+                                                if (!structure.Tables[a].TableName.StartsWith(dt.TableName))
+                                                {
+                                                    pageIndexOfThisRow = b;
+                                                    break;
+                                                }
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    structure = insertTableToSet(structure, newTable, pageIndexOfThisRow);
+                                }
+                                SlidesEditer.addSilde(pptPrest, pageIndexOfThisRow + 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
                                 //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
                             }
 
@@ -229,19 +253,29 @@ namespace MakeSlidesFromExcel
                     //mobile games
                     {
                         int rowCount = dt.Rows.Count;
-                        Dictionary<string, int> channelRowCountDict = new Dictionary<string, int>();
+                        Dictionary<string, int> channelCountDict = new Dictionary<string, int>();
                         for (int j = 2; j < rowCount; j++)
                         {
                             string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[1]["text"];
-                            if (channelRowCountDict.Keys.Contains(newTableName))
+                            Console.WriteLine("line {0}, {1}", j + 1, newTableName);
+                            if (channelCountDict.Keys.Contains(newTableName))
                             {
+                                Console.WriteLine("line {0}'s channel exists.", j + 1);
                                 int firstPageIndex = structure.Tables.IndexOf(newTableName);
-                                int channelRowCount = channelRowCountDict[newTableName];
-
-                                if(channelRowCount%3 == 0)
+                                int channelCount = channelCountDict[newTableName];
+                                if(channelCount%3 != 0)
                                 {
+                                    Console.WriteLine("add this line to a page existed");
+                                    pageIndexOfThisRow = firstPageIndex + channelCount / 3;
+                                    DataTable newTable = structure.Tables[pageIndexOfThisRow];
+                                    newTable.Rows.Add(dt.Rows[j].ItemArray);
+                                    SlidesEditer.addRow(pptPrest, pageIndexOfThisRow +2 + gamesCount, dt.Rows[j]);
+                                }
+                                else
+                                {         
+                                    Console.WriteLine("but it still have to build a new page");
                                     DataTable newTable = new DataTable();
-                                    newTable.TableName = newTableName + "[" + (channelRowCount / 3).ToString() +"]";
+                                    newTable.TableName = newTableName + "[" + (channelCount / 3 + 1).ToString() + "]";
                                     for (int k = 0; k < dt.Columns.Count; k++)
                                     {
                                         DataColumn column = new DataColumn();
@@ -251,19 +285,16 @@ namespace MakeSlidesFromExcel
                                     }
                                     newTable.Rows.Add(dt.Rows[0].ItemArray);
                                     newTable.Rows.Add(dt.Rows[j].ItemArray);
-                                    int insertPageIndex = firstPageIndex + channelRowCount / 3;
-                                    insertTableToSet(structure, newTable, insertPageIndex);                                
+                                    pageIndexOfThisRow = firstPageIndex + channelCount / 3;
+                                    structure = insertTableToSet(structure, newTable, pageIndexOfThisRow);
+                                    SlidesEditer.addSilde(pptPrest, pageIndexOfThisRow + 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
+                                    //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
                                 }
-                                else
-                                {
-                                    int n = firstPageIndex - 1 + channelRowCount / 3;
-                                    DataTable newTable = structure.Tables[n];
-                                    newTable.Rows.Add(dt.Rows[j].ItemArray);
-                                }
-                                channelRowCountDict[newTableName] += 1;
+                                channelCountDict[newTableName] += 1;
                             }
                             else
                             {
+                                Console.WriteLine("line {0} does not exist, let's build a new page", j+1);
                                 DataTable newTable = new DataTable();
                                 newTable.TableName = newTableName;
                                 for (int k = 0; k < dt.Columns.Count; k++)
@@ -275,8 +306,36 @@ namespace MakeSlidesFromExcel
                                 }
                                 newTable.Rows.Add(dt.Rows[0].ItemArray);
                                 newTable.Rows.Add(dt.Rows[j].ItemArray);
-                                channelRowCountDict.Add(newTableName, 1);
-                                structure.Tables.Add(newTable);
+                                channelCountDict.Add(newTableName, 1);
+                                //structure.Tables.Add(newTable);
+                                pageIndexOfThisRow = structure.Tables.Count;
+                                if(gameList[gameList.Count-1] == dt.TableName)
+                                {
+                                    structure.Tables.Add(newTable);
+                                }
+                                else
+                                {
+                                    for (int a = 0; a < structure.Tables.Count; a++)
+                                    {
+                                        if (structure.Tables[a].TableName.StartsWith(dt.TableName))
+                                        {
+                                            pageIndexOfThisRow = structure.Tables.Count;
+                                            for (int b = a; b < structure.Tables.Count; b++)
+                                            {
+                                                if (!structure.Tables[a].TableName.StartsWith(dt.TableName))
+                                                {
+                                                    pageIndexOfThisRow = b;
+                                                    break;
+                                                }
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    structure = insertTableToSet(structure, newTable, pageIndexOfThisRow);
+                                }
+                                SlidesEditer.addSilde(pptPrest, pageIndexOfThisRow + 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j],  gameList.IndexOf(dt.TableName));
+                                //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
+                                Console.WriteLine("line {0}'s new page has been added to dataset", j + 1);
                             }
                         }                   
                     }
@@ -299,7 +358,7 @@ namespace MakeSlidesFromExcel
             {
                 games[i] = structure.Tables[i].TableName.Split(new char[1] { '-' })[0];
                 material[i] = structure.Tables[i].TableName.Split(new char[1] { '-' })[1];
-                rowCount[i] = structure.Tables[i].Rows.Count;
+                rowCount[i] = structure.Tables[i].Rows.Count - 1;
             }
             slidesIndex.Add(games);
             slidesIndex.Add(material);
@@ -310,12 +369,19 @@ namespace MakeSlidesFromExcel
         public static DataSet jsonToStructure(string slidesMapJson)
         {
             DataSet structure = new DataSet();
-            Dictionary<string, object> structureDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(slidesMapJson);
+            SortedDictionary<string, object> structureDict = JsonConvert.DeserializeObject<SortedDictionary<string, object>>(slidesMapJson);
+            foreach(KeyValuePair<string, object> kvp in structureDict)
+            {
+                Console.WriteLine("key is {0}, value type is {1}", kvp.Key, kvp.Value.GetType());
+                //Console.WriteLine(kvp.Value);
+                DataTable a = JsonConvert.DeserializeObject<DataTable>(kvp.Value.ToString());
+            }
             return structure;
         }
 
         static void Main(string[] args)
         {
+            /*
             initialize();
             string excelName = Environment.CurrentDirectory + "\\a.xlsx";
             
@@ -323,9 +389,10 @@ namespace MakeSlidesFromExcel
             string pptName = Environment.CurrentDirectory + "\\test.pptx";
             PowerPoint.Presentation ppt = SlidesEditer.openPPT(pptName);
             DataSet sheets = ReadExcel(excelName, gameList);
-            //string rawJson = File.ReadAllText(@"SlidesMap.json");
-            //DataSet structure = JsonConvert.DeserializeObject<DataSet>(rawJson);
-            makeStructure(ppt,sheets);
+            */
+            string rawJson = File.ReadAllText(@"SlidesMap.json");
+            DataSet structure = jsonToStructure(rawJson);
+            //makeStructure(ppt,sheets);
             Console.WriteLine("Finish");
             Console.ReadKey();
         }
