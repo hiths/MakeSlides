@@ -17,11 +17,10 @@ namespace PowerPointOperator
             {
                 Console.WriteLine("Please put the PowerPoint templet file in the root directory.");
                 Console.ReadKey();
-                //return null;
                 Environment.Exit(0);
             }
             PowerPoint.Application appPPT = new PowerPoint.Application();
-            appPPT.Visible = MsoTriState.msoCTrue;
+            //appPPT.Visible = MsoTriState.msoFalse;
             PowerPoint.Presentation pptPrest = appPPT.Presentations.Open(filePath, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoCTrue);
             return pptPrest;
         }

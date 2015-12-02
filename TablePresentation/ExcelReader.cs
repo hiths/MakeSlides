@@ -4,6 +4,7 @@ using System.Data;
 using Newtonsoft.Json;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace ExcelManipulater
 {
@@ -51,7 +52,8 @@ namespace ExcelManipulater
             }
             finally
             {
-                Dispose(fileName, ref xlApp, ref xlWorkBook);
+                //Dispose(fileName, ref xlApp, ref xlWorkBook);
+                KillExcel(xlApp);
             }
 
             return sheets;
@@ -171,6 +173,29 @@ namespace ExcelManipulater
             finally
             {
                 GC.Collect();
+            }
+        }
+
+        [DllImport("User32.dll")]
+        public static extern int GetWindowThreadProcessId(IntPtr hWnd, out int ProcessId);
+        private static void KillExcel(Excel.Application theApp)
+        {
+            int id = 0;
+            IntPtr intptr = new IntPtr(theApp.Hwnd);
+            System.Diagnostics.Process p = null;
+            try
+            {
+                GetWindowThreadProcessId(intptr, out id);
+                p = System.Diagnostics.Process.GetProcessById(id);
+                if (p != null)
+                {
+                    p.Kill();
+                    p.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
             }
         }
     }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Data;
 using Excel = Microsoft.Office.Interop.Excel;
+using System.Runtime.InteropServices;
 
 namespace ExcelManipulater
 {
@@ -15,10 +16,10 @@ namespace ExcelManipulater
             Excel.Workbook xlWorkBook = null;
             Excel.Worksheet xlWorkSheet = null;
             object misValue = System.Reflection.Missing.Value;
-
             xlApp = new Excel.Application();
             xlWorkBook = xlApp.Workbooks.Add(misValue);
-
+            //xlApp.Visible = true;
+            xlApp.DisplayAlerts = false;
             int sheetNum = dataSheets.Tables.Count;
             int i = 0;
             int j = 0;
@@ -43,7 +44,7 @@ namespace ExcelManipulater
                         DataRow dr = dataTable.Rows[i];
                         for (j = 0; j < dataTable.Columns.Count; j++)
                         {
-                            xlWorkSheet.Cells[i + 1, j + 1] = ((dynamic)dr.ItemArray[j])["text"];
+                            xlWorkSheet.Cells[i + 1, j + 1] = ((dynamic)dr.ItemArray[j])["text"].ToString();
                         }
                     }
                 }
@@ -82,6 +83,29 @@ namespace ExcelManipulater
             finally
             {
                 GC.Collect();
+            }
+        }
+
+        [DllImport("User32.dll")]
+        public static extern int GetWindowThreadProcessId(IntPtr hWnd, out int ProcessId);
+        private static void KillExcel(Excel.Application theApp)
+        {
+            int id = 0;
+            IntPtr intptr = new IntPtr(theApp.Hwnd);
+            System.Diagnostics.Process p = null;
+            try
+            {
+                GetWindowThreadProcessId(intptr, out id);
+                p = System.Diagnostics.Process.GetProcessById(id);
+                if (p != null)
+                {
+                    p.Kill();
+                    p.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
             }
         }
     }
