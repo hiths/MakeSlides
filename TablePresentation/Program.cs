@@ -370,11 +370,14 @@ namespace MakeSlidesFromExcel
         {
             DataSet structure = new DataSet();
             SortedDictionary<string, object> structureDict = JsonConvert.DeserializeObject<SortedDictionary<string, object>>(slidesMapJson);
+            int i = 1;
             foreach(KeyValuePair<string, object> kvp in structureDict)
             {
-                Console.WriteLine("key is {0}, value type is {1}", kvp.Key, kvp.Value.GetType());
+                //Console.WriteLine("第{0}：", i);
+                //i++;
+                //Console.WriteLine("key is {0}, value type is {1}", kvp.Key, kvp.Value.GetType());
                 //Console.WriteLine(kvp.Value);
-                DataTable a = JsonConvert.DeserializeObject<DataTable>(kvp.Value.ToString());
+                DataTable a = JsonConvert.DeserializeObject<DataTable>(kvp.Value, Type.GetType("System.Dictionary<string, string");
             }
             return structure;
         }
