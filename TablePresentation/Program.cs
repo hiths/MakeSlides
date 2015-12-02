@@ -75,25 +75,25 @@ namespace MakeSlidesFromExcel
                         
                         if(format.IndexOf("%") != -1)
                         {
-                            ((dynamic)dr[i])["format"] = "0.00 % ";
-                            ((dynamic)dr[i])["text"] =Math.Round(double.Parse(text), 4, MidpointRounding.AwayFromZero).ToString();
+                            ((dynamic)dr[i])["text"] =(Math.Round(double.Parse(text), 4, MidpointRounding.AwayFromZero)*100).ToString() + "%";
+
                         }
                         else
                         {
                             ((dynamic)dr[i])["text"] = Math.Round(double.Parse(text), 2, MidpointRounding.AwayFromZero).ToString();
                         }   
                     }
+                    dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"]}, { "color", ((dynamic)dr[i])["color"]}};
                 }
             }
         }
 
-        public static DataSet ReadExcel(string excelFile, List<string> whiteList = null)
+        public static DataSet ReadExcel(string excelFile, Dictionary<string, int[]> gameConfig = null)
         {
             if (!File.Exists(excelFile))
             {
                 Console.WriteLine("Can not find specified excel file.");
                 Console.ReadKey();
-                //return null;
                 Environment.Exit(0);
             }
             Console.WriteLine("reading excel file : {0}", excelFile);
@@ -101,19 +101,19 @@ namespace MakeSlidesFromExcel
             string json = String.Empty;
             if (sheets != null)
             {
-                if (whiteList != null)
+                if (gameConfig != null)
                 {
                     for(int i = sheets.Tables.Count-1; i >= 0; i --)
                     {
                         string tableName = sheets.Tables[i].TableName;
-                        if (!whiteList.Contains(tableName))
+                        if (!gameConfig.Keys.Contains(tableName))
                         {
                             sheets.Tables.Remove(sheets.Tables[i]);
                         }
                         else
                         {
-                            int width = ((dynamic)gameConfig[sheets.Tables[i].TableName])[1];
-                            regulateData(sheets.Tables[i], width);
+                            int width = ((dynamic)gameConfig[tableName])[2];
+                            regulateData(sheets.Tables[i], width+1);
                         }
                     }
                 }
@@ -121,7 +121,6 @@ namespace MakeSlidesFromExcel
                 {
                     foreach (DataTable dt in sheets.Tables)
                     {
-                        int width = ((dynamic)gameConfig[dt.TableName])[1];
                         regulateData(dt);
                     }
                 }
@@ -384,18 +383,18 @@ namespace MakeSlidesFromExcel
 
         static void Main(string[] args)
         {
-            /*
+            
             initialize();
             string excelName = Environment.CurrentDirectory + "\\a.xlsx";
             
             
             string pptName = Environment.CurrentDirectory + "\\test.pptx";
             PowerPoint.Presentation ppt = SlidesEditer.openPPT(pptName);
-            DataSet sheets = ReadExcel(excelName, gameList);
-            */
-            string rawJson = File.ReadAllText(@"SlidesMap.json");
-            DataSet structure = jsonToStructure(rawJson);
-            //makeStructure(ppt,sheets);
+            DataSet sheets = ReadExcel(excelName, gameConfig);
+            
+            //string rawJson = File.ReadAllText(@"SlidesMap.json");
+            //DataSet structure = jsonToStructure(rawJson);
+            makeStructure(ppt,sheets);
             Console.WriteLine("Finish");
             Console.ReadKey();
         }
