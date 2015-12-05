@@ -194,12 +194,35 @@ class Program
             List<object> slidesIndex = getSlidesIndex(structure);
             for (int i = 0; i < newSheets.Tables.Count; i++)
             {
+                if(newSheets.Tables[i].Rows.Count < 3)
+                {
+                    continue;
+                }
                 DataTable dt = newSheets.Tables[i];
+                if (newSheets.Tables[i].Rows.Count == 3)
+                {
+                    DataTable newTable = new DataTable();
+                    for (int k = 0; k < dt.Columns.Count; k++)
+                    {
+                        DataColumn column = new DataColumn();
+                        column.DataType = Type.GetType("System.Object");
+                        column.ColumnName = ((dynamic)dt.Rows[0])[k]["text"];
+                        newTable.Columns.Add(column);
+                    }
+                    newTable.TableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
+                    newTable.Rows.Add(dt.Rows[0].ItemArray);
+                    newTable.Rows.Add(dt.Rows[2].ItemArray);
+                }
+                
                 // web games
                 if ((gameConfig[dt.TableName])[1] == 0)
                 {
                     for (int j = 2; j < dt.Rows.Count; j++)
                     {
+                        if(((dynamic)dt.Rows[j][0])["text"] == String.Empty)
+                        {
+                            continue;
+                        }
                         slidesIndex = getSlidesIndex(structure);
                         string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
                         if (structure.Tables.Contains(newTableName))
@@ -222,25 +245,32 @@ class Program
                             newTable.Rows.Add(dt.Rows[0].ItemArray);
                             newTable.Rows.Add(dt.Rows[j].ItemArray);
                             int dtNameIndex = ((dynamic)gameConfig[dt.TableName])[1];
-                            if (!((dynamic)slidesIndex)[0].Contains(dt.TableName))
+                            if (((dynamic)slidesIndex[0]).Count ==0 | !((dynamic)slidesIndex)[0].Contains(dt.TableName))
                             {
-                                string indexGame = ((structure.Tables[structure.Tables.Count - 1].TableName).Split(new char[1]{ '-' }))[0];
-                                if (dtNameIndex > ((dynamic)gameConfig[indexGame])[1])
+                                if(((dynamic)slidesIndex[0]).Count == 0)
                                 {
-                                    pageIndexOfThisRow = structure.Tables.Count;
+                                    pageIndexOfThisRow = 0;
                                 }
                                 else
                                 {
-                                    for (int a = 0; a < structure.Tables.Count; a++)
+                                    string indexGame = ((structure.Tables[structure.Tables.Count - 1].TableName).Split(new char[1] { '-' }))[0];
+                                    if (dtNameIndex > ((dynamic)gameConfig[indexGame])[1])
                                     {
-                                        indexGame = ((structure.Tables[a].TableName).Split(new char[1] { '-' }))[0];
-                                        int eachTableNameIndex = ((dynamic)gameConfig[indexGame])[1];
-                                        if (eachTableNameIndex > dtNameIndex)
+                                        pageIndexOfThisRow = structure.Tables.Count;
+                                    }
+                                    else
+                                    {
+                                        for (int a = 0; a < structure.Tables.Count; a++)
                                         {
-                                            pageIndexOfThisRow = a;
+                                            indexGame = ((structure.Tables[a].TableName).Split(new char[1] { '-' }))[0];
+                                            int eachTableNameIndex = ((dynamic)gameConfig[indexGame])[1];
+                                            if (eachTableNameIndex > dtNameIndex)
+                                            {
+                                                pageIndexOfThisRow = a;
+                                            }
                                         }
                                     }
-                                }     
+                                }                         
                             }
                             else
                             {
@@ -265,7 +295,6 @@ class Program
                             SlidesEditer.addSilde(pptPrest, pageIndexOfThisRow + 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
                             //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
                         }
-
                     }
                 }
                 else
@@ -275,6 +304,10 @@ class Program
                     Dictionary<string, int> channelCountDict = new Dictionary<string, int>();
                     for (int j = 2; j < rowCount; j++)
                     {
+                        if (((dynamic)dt.Rows[j][0])["text"] == String.Empty)
+                        {
+                            continue;
+                        }
                         slidesIndex = getSlidesIndex(structure);
                         string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
                         Console.WriteLine("line {0}, {1}", j + 1, newTableName);
@@ -391,10 +424,10 @@ class Program
                 material.Add((structure.Tables[i].TableName.Split(new char[1] { '-' }))[1]);
                 rowCount.Add(structure.Tables[i].Rows.Count - 1);
             }
-            slidesIndex.Add(games);
-            slidesIndex.Add(material);
-            slidesIndex.Add(rowCount);
         }
+        slidesIndex.Add(games);
+        slidesIndex.Add(material);
+        slidesIndex.Add(rowCount);
         return slidesIndex;
     }
 
