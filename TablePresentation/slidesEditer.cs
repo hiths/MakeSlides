@@ -17,7 +17,8 @@ namespace PowerPointOperator
             {
                 Console.WriteLine("Please put the PowerPoint templet file in the root directory.");
                 Console.ReadKey();
-                Environment.Exit(0);
+                //Environment.Exit(0);
+                Program.showMenu();
             }
             PowerPoint.Application appPPT = new PowerPoint.Application();
             //appPPT.Visible = MsoTriState.msoFalse;

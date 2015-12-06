@@ -6,9 +6,8 @@ using PowerPointOperator;
 using Newtonsoft.Json;
 using System.Linq;
 using System.Collections.Generic;
-using Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
-using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 class Program
 {
@@ -16,12 +15,13 @@ class Program
     private static int gamesCount = 0;
     private static List<string> gameList = new List<string>();
     private static string configFile = Environment.CurrentDirectory + "\\Config.json";
-    private static string structureFile = currentLogFolder + "\\SlidesMap.xls";
-    private static string currentLogFolder = Environment.CurrentDirectory + "\\Project" + "\\" + DateTime.Now.Year+"-"+DateTime.Now.Month+"-"+DateTime.Now.Day;
-    private static string projectSlides = currentLogFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
+    private static string projectFolder = Environment.CurrentDirectory + "\\Project";
+    private static string newProjectFolder = String.Empty;
+    private static string projectSlides = String.Empty;
     //private static string backupFolder = "Backup";
     //private static string outputFolder = "OutPut";
-    private static string projectFolder = Environment.CurrentDirectory + "\\Project";
+    private static string structureFile = String.Empty;
+    private static DataSet structure = new DataSet();
 
     public static void initialize()
     {
@@ -95,13 +95,18 @@ class Program
         }
         Console.WriteLine("reading excel file : {0}", excelFile);
         DataSet sheets = ExcelReader.ImportDataFromAllSheets(excelFile);
-        string json = String.Empty;
+        //string json = String.Empty;
         if (sheets != null)
         {
             if (gameConfig != null)
             {
                 for(int i = sheets.Tables.Count-1; i >= 0; i --)
                 {
+                    if(sheets.Tables[i].Rows.Count < 3)
+                    {
+                        sheets.Tables.Remove(sheets.Tables[i]);
+                        continue;
+                    }
                     string tableName = sheets.Tables[i].TableName;
                     if (!gameConfig.Keys.Contains(tableName))
                     {
@@ -155,405 +160,298 @@ class Program
         }
     }
 
-    public static DataSet makeStructure(PowerPoint.Presentation pptPrest, DataSet newSheets, DataSet structure = null)
+    public static DataSet makeStructure(PowerPoint.Presentation pptPrest, DataSet newSheets, DataSet structure)
     {
-        int pageIndexOfThisRow = 0;
-        if (structure != null)
+        List<string> slidesIndex = getSlidesIndex(structure);
+        for (int i = 0; i < newSheets.Tables.Count; i++)
         {
-            List<object> slidesIndex = getSlidesIndex(structure);        
-            for (int i = 0; i < newSheets.Tables.Count; i++)
+            DataTable dt = newSheets.Tables[i];
+            for (int j = 2; j < dt.Rows.Count; j++)
             {
-                slidesIndex = getSlidesIndex(structure);
-                string game = structure.Tables[i].TableName.Split(new char[1] { '-' })[0];
-                if (((dynamic)slidesIndex[0]).Contains(game))
-                {
-                    for (int j = 1; j < newSheets.Tables[i].Rows.Count; j ++ )
-                    {
-                        string column_0 = ((dynamic)newSheets.Tables[i].Rows[j])[0]["text"];
-                        DataRow dr = newSheets.Tables[i].Rows[j];
-                        if (((dynamic)slidesIndex[1]).Contains(column_0) && ((dynamic)slidesIndex[0])[((dynamic)slidesIndex[1]).IndexOf(column_0)] == game)
-                        {
-                            int index = ((dynamic)slidesIndex[1]).IndexOf(column_0);
-                            structure.Tables[index].Rows.Add(dr.ItemArray);
-                        }
-                        else
-                        {
-                            int index = ((dynamic)slidesIndex[0]).LastIndexOf(game);
-                            DataTable newTable = new DataTable(game + "-" + column_0);
-                            newTable.Rows.Add(newSheets.Tables[i].Rows[0].ItemArray);
-                            newTable.Rows.Add(dr.ItemArray);
-                            insertTableToSet(structure, newTable, index);
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            structure = new DataSet();
-            List<object> slidesIndex = getSlidesIndex(structure);
-            for (int i = 0; i < newSheets.Tables.Count; i++)
-            {
-                if(newSheets.Tables[i].Rows.Count < 3)
+                if (((dynamic)dt.Rows[j][0])["text"] == String.Empty)
                 {
                     continue;
                 }
-                DataTable dt = newSheets.Tables[i];
-                if (newSheets.Tables[i].Rows.Count == 3)
+                slidesIndex = getSlidesIndex(structure);
+                string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
+                int firstPageOfGame = slidesIndex.FindIndex(param => param.Equals(dt.TableName));
+                int lastPageOfGame = slidesIndex.FindLastIndex(param => param.Equals(dt.TableName));
+                //Console.WriteLine("row {0}, firstpageofgame is {1}, last is {2}", j - 1, firstPageOfGame, lastPageOfGame);
+                if (firstPageOfGame != -1)
                 {
-                    DataTable newTable = new DataTable();
-                    for (int k = 0; k < dt.Columns.Count; k++)
+                    bool pageFound = false;
+                    //Console.WriteLine("row{0}", j - 1);
+                    for (int k = lastPageOfGame; k >= firstPageOfGame; k--)
                     {
-                        DataColumn column = new DataColumn();
-                        column.DataType = Type.GetType("System.Object");
-                        column.ColumnName = ((dynamic)dt.Rows[0])[k]["text"];
-                        newTable.Columns.Add(column);
-                    }
-                    newTable.TableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
-                    newTable.Rows.Add(dt.Rows[0].ItemArray);
-                    newTable.Rows.Add(dt.Rows[2].ItemArray);
-                }
-                
-                // web games
-                if ((gameConfig[dt.TableName])[1] == 0)
-                {
-                    for (int j = 2; j < dt.Rows.Count; j++)
-                    {
-                        if(((dynamic)dt.Rows[j][0])["text"] == String.Empty)
+                        //Console.WriteLine("this row is {0}, current page is {1}", newTableName, structure.Tables[k].TableName);
+                        if (structure.Tables[k].TableName.StartsWith(newTableName))
                         {
-                            continue;
-                        }
-                        slidesIndex = getSlidesIndex(structure);
-                        string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
-                        if (structure.Tables.Contains(newTableName))
-                        {
-                            structure.Tables[newTableName].Rows.Add(dt.Rows[j].ItemArray);
-                            pageIndexOfThisRow = structure.Tables.IndexOf(newTableName);
-                            SlidesEditer.addRow(pptPrest, pageIndexOfThisRow + 2 + gamesCount, dt.Rows[j]);
-                        }
-                        else
-                        {
-                            DataTable newTable = new DataTable();
-                            for (int k = 0; k < dt.Columns.Count; k++)
+                            pageFound = true;
+                            //Console.WriteLine("row{0} found page {1}", j - 1, k + 1);
+                            string foundPageName = structure.Tables[k].TableName;
+                            //web game
+                            if ((gameConfig[dt.TableName])[1] == 0)
                             {
-                                DataColumn column = new DataColumn();
-                                column.DataType = Type.GetType("System.Object");
-                                column.ColumnName = ((dynamic)dt.Rows[0])[k]["text"];
-                                newTable.Columns.Add(column);
+                                structure.Tables[k].Rows.Add(dt.Rows[j].ItemArray);
+                                SlidesEditer.addRow(pptPrest, k + 2 + gamesCount, dt.Rows[j]);
+                                break;
                             }
-                            newTable.TableName = newTableName;
-                            newTable.Rows.Add(dt.Rows[0].ItemArray);
-                            newTable.Rows.Add(dt.Rows[j].ItemArray);
-                            int dtNameIndex = ((dynamic)gameConfig[dt.TableName])[1];
-                            if (((dynamic)slidesIndex[0]).Count ==0 | !((dynamic)slidesIndex)[0].Contains(dt.TableName))
+                            //mobile game
+                            else
                             {
-                                if(((dynamic)slidesIndex[0]).Count == 0)
+                                if (structure.Tables[k].Rows.Count > 3)
                                 {
-                                    pageIndexOfThisRow = 0;
-                                }
-                                else
-                                {
-                                    string indexGame = ((structure.Tables[structure.Tables.Count - 1].TableName).Split(new char[1] { '-' }))[0];
-                                    if (dtNameIndex > ((dynamic)gameConfig[indexGame])[1])
+                                    string regex = @"((\d+))";
+                                    Match channelIndex = Regex.Match(foundPageName, regex);
+                                    if (channelIndex.Length == 0)
                                     {
-                                        pageIndexOfThisRow = structure.Tables.Count;
+                                        newTableName += "(2)";
                                     }
                                     else
                                     {
-                                        for (int a = 0; a < structure.Tables.Count; a++)
-                                        {
-                                            indexGame = ((structure.Tables[a].TableName).Split(new char[1] { '-' }))[0];
-                                            int eachTableNameIndex = ((dynamic)gameConfig[indexGame])[1];
-                                            if (eachTableNameIndex > dtNameIndex)
-                                            {
-                                                pageIndexOfThisRow = a;
-                                            }
-                                        }
+                                        newTableName += "(" + (Convert.ToInt32(channelIndex.Groups[1].Value) + 1).ToString() + ")";
                                     }
-                                }                         
-                            }
-                            else
-                            {
-                                for (int a = 0; a < structure.Tables.Count; a++)
+                                    DataTable newTable = dt.Clone();
+                                    newTable.TableName = newTableName;
+                                    newTable.Rows.Add(dt.Rows[0].ItemArray);
+                                    newTable.Rows.Add(dt.Rows[j].ItemArray);
+                                    structure = insertTableToSet(structure, newTable, k + 1);
+                                    SlidesEditer.addSilde(pptPrest, k + 3 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
+                                    break;
+                                }
+                                else
                                 {
-                                    if (structure.Tables[a].TableName.StartsWith(dt.TableName))
-                                    {
-                                        pageIndexOfThisRow = structure.Tables.Count;
-                                        for(int b = a; b < structure.Tables.Count; b++)
-                                        {
-                                            if (!structure.Tables[a].TableName.StartsWith(dt.TableName))
-                                            {
-                                                pageIndexOfThisRow = b;
-                                                break;
-                                            }
-                                        }
-                                        break;
-                                    }
+                                    structure.Tables[k].Rows.Add(dt.Rows[j].ItemArray);
+                                    SlidesEditer.addRow(pptPrest, k + 2 + gamesCount, dt.Rows[j]);
+                                    break;
                                 }
                             }
-                            structure = insertTableToSet(structure, newTable, pageIndexOfThisRow);
-                            SlidesEditer.addSilde(pptPrest, pageIndexOfThisRow + 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
-                            //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
                         }
+                    }
+                    if (pageFound == false)
+                    {
+                        DataTable newTable = dt.Clone();
+                        newTable.TableName = newTableName;
+                        newTable.Rows.Add(dt.Rows[0].ItemArray);
+                        newTable.Rows.Add(dt.Rows[j].ItemArray);
+                        structure = insertTableToSet(structure, newTable, lastPageOfGame + 1);
+                        SlidesEditer.addSilde(pptPrest, lastPageOfGame + 3 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
+                        continue;
                     }
                 }
                 else
-                //mobile games
+                // current game does not exist;
                 {
-                    int rowCount = dt.Rows.Count;
-                    Dictionary<string, int> channelCountDict = new Dictionary<string, int>();
-                    for (int j = 2; j < rowCount; j++)
+                    if (structure.Tables.Count == 0)
                     {
-                        if (((dynamic)dt.Rows[j][0])["text"] == String.Empty)
+                        DataTable newTable = dt.Clone();
+                        newTable.TableName = newTableName;
+                        newTable.Rows.Add(dt.Rows[0].ItemArray);
+                        newTable.Rows.Add(dt.Rows[j].ItemArray);
+                        structure.Tables.Add(newTable);
+                        SlidesEditer.addSilde(pptPrest, 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
+                    }
+                    else
+                    {
+                        int insertIndex = 0;
+                        for (int a = structure.Tables.Count - 1; a >= 0; a --)
                         {
-                            continue;
+                            string pageGame = ((structure.Tables[a].TableName).Split(new char[1] { '-' }))[0];
+                            int pageGameIndex = ((dynamic)gameConfig[pageGame])[1];
+                            int indexOfGame = ((dynamic)gameConfig[dt.TableName])[1];
+                            if (indexOfGame > pageGameIndex)
+                            {
+                                insertIndex = pageGameIndex + 1;
+                            }
                         }
-                        slidesIndex = getSlidesIndex(structure);
-                        string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
-                        Console.WriteLine("line {0}, {1}", j + 1, newTableName);
-                        if (channelCountDict.Keys.Contains(newTableName))
-                        {
-                            Console.WriteLine("line {0}'s channel exists.", j + 1);
-                            int firstPageIndex = structure.Tables.IndexOf(newTableName);
-                            int channelCount = channelCountDict[newTableName];
-                            if(channelCount%3 != 0)
-                            {
-                                Console.WriteLine("add this line to a page existed");
-                                pageIndexOfThisRow = firstPageIndex + channelCount / 3;
-                                DataTable newTable = structure.Tables[pageIndexOfThisRow];
-                                newTable.Rows.Add(dt.Rows[j].ItemArray);
-                                SlidesEditer.addRow(pptPrest, pageIndexOfThisRow +2 + gamesCount, dt.Rows[j]);
-                            }
-                            else
-                            {         
-                                Console.WriteLine("but it still have to build a new page");
-                                DataTable newTable = new DataTable();
-                                newTable.TableName = newTableName + "(" + (channelCount / 3 + 1).ToString() + ")";
-                                for (int k = 0; k < dt.Columns.Count; k++)
-                                {
-                                    DataColumn column = new DataColumn();
-                                    column.DataType = Type.GetType("System.Object");
-                                    column.ColumnName = ((dynamic)dt.Rows[0])[k]["text"];
-                                    newTable.Columns.Add(column);
-                                }
-                                newTable.Rows.Add(dt.Rows[0].ItemArray);
-                                newTable.Rows.Add(dt.Rows[j].ItemArray);
-                                pageIndexOfThisRow = firstPageIndex + channelCount / 3;
-                                structure = insertTableToSet(structure, newTable, pageIndexOfThisRow);
-                                SlidesEditer.addSilde(pptPrest, pageIndexOfThisRow + 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
-                                //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
-                            }
-                            channelCountDict[newTableName] += 1;
-                        }
-                        else
-                        {
-                            Console.WriteLine("line {0} does not exist, let's build a new page", j+1);
-                            DataTable newTable = new DataTable();
-                            newTable.TableName = newTableName;
-                            for (int k = 0; k < dt.Columns.Count; k++)
-                            {
-                                DataColumn column = new DataColumn();
-                                column.DataType = Type.GetType("System.Object");
-                                column.ColumnName = ((dynamic)dt.Rows[0])[k]["text"];
-                                newTable.Columns.Add(column);
-                            }
-                            newTable.Rows.Add(dt.Rows[0].ItemArray);
-                            newTable.Rows.Add(dt.Rows[j].ItemArray);
-                            channelCountDict.Add(newTableName, 1);
-                            pageIndexOfThisRow = structure.Tables.Count;
-                            if(gameList[gameList.Count-1] == dt.TableName)
-                            {
-                                structure.Tables.Add(newTable);
-                            }
-                            else
-                            {
-                                for (int a = 0; a < structure.Tables.Count; a++)
-                                {
-                                    if (structure.Tables[a].TableName.StartsWith(dt.TableName))
-                                    {
-                                        pageIndexOfThisRow = structure.Tables.Count;
-                                        for (int b = a; b < structure.Tables.Count; b++)
-                                        {
-                                            if (!structure.Tables[a].TableName.StartsWith(dt.TableName))
-                                            {
-                                                pageIndexOfThisRow = b;
-                                                break;
-                                            }
-                                        }
-                                        break;
-                                    }
-                                }
-                                structure = insertTableToSet(structure, newTable, pageIndexOfThisRow);
-                            }
-                            SlidesEditer.addSilde(pptPrest, pageIndexOfThisRow + 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j],  gameList.IndexOf(dt.TableName));
-                            //SlidesEditer.addRow(pptPrest, j + gamesCount, dt.Rows[j]);
-                            Console.WriteLine("line {0}'s new page has been added to dataset", j + 1);
-                        }
-                    }                   
+                        DataTable newTable = dt.Clone();
+                        newTable.TableName = newTableName;
+                        newTable.Rows.Add(dt.Rows[0].ItemArray);
+                        newTable.Rows.Add(dt.Rows[j].ItemArray);
+                        structure = insertTableToSet(structure, newTable, insertIndex);
+                        SlidesEditer.addSilde(pptPrest, insertIndex + 2 + gamesCount, newTable.TableName, dt.Rows[0], dt.Rows[j], gameList.IndexOf(dt.TableName));
+                        continue;
+                    }
                 }
-                        
             }
-                
         }
         //export slidemaps to json
         /*
         string json = JsonConvert.SerializeObject(structure, Formatting.Indented);
         File.WriteAllText(structureFile, json);
         */
-        string slideMaps = currentLogFolder + "\\" + "SlideMaps-" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + ".xls";
-        if (File.Exists(currentLogFolder + "\\" + "SlideMaps.xls"))
+        string slideMaps = newProjectFolder + "\\" + "SlidesMap-" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + ".xls";
+        if (File.Exists(newProjectFolder + "\\" + "SlidesMap.xls"))
         {
-            File.Move(currentLogFolder + "\\" + "SlideMaps.xls", slideMaps);
+            File.Move(newProjectFolder + "\\" + "SlidesMap.xls", slideMaps);
         }
-        ExcelWriter.ExportDataToExcel(structure, currentLogFolder + "\\" + "SlideMaps.xls");
+        ExcelWriter.ExportDataToExcel(structure, newProjectFolder + "\\" + "SlidesMap.xls");
         pptPrest.SaveAs(projectSlides);
-        return structure;
+        return structure;      
     }
 
-    public static List<object> getSlidesIndex(DataSet structure)
+    public static List<string> getSlidesIndex(DataSet structure)
     {
-        List<object> slidesIndex = new List<object>();
+        //List<object> slidesIndex = new List<object>();
         List<string> games = new List<string>();
-        List<string> material = new List<string>();
-        List<int> rowCount = new List<int>();
-        if(structure.Tables.Count != 0)
+        //List<string> tableNames = new List<string>();
+        for (int i = 0; i < structure.Tables.Count; i++)
         {
-            for (int i = 0; i < structure.Tables.Count; i++)
-            {
-                games.Add((structure.Tables[i].TableName.Split(new char[1] { '-' }))[0]);
-                material.Add((structure.Tables[i].TableName.Split(new char[1] { '-' }))[1]);
-                rowCount.Add(structure.Tables[i].Rows.Count - 1);
-            }
+            games.Add((structure.Tables[i].TableName.Split(new char[1] { '-' }))[0]);
         }
-        slidesIndex.Add(games);
-        slidesIndex.Add(material);
-        slidesIndex.Add(rowCount);
-        return slidesIndex;
+        return games;
     }
 
-    public static DataSet jsonToStructure(string slidesMapJson)
-    {
-        DataSet structure = new DataSet();
-        SortedDictionary<string, object> structureDict = JsonConvert.DeserializeObject<SortedDictionary<string, object>>(slidesMapJson);
-        int i = 1;
-        foreach(KeyValuePair<string, object> kvp in structureDict)
-        {
-            //Console.WriteLine("第{0}：", i);
-            //i++;
-            //Console.WriteLine("key is {0}, value type is {1}", kvp.Key, kvp.Value.GetType());
-            //Console.WriteLine(kvp.Value);
-            //DataTable a = JsonConvert.DeserializeObject<DataTable>(kvp.Value, Type.GetType("System.Dictionary<string, string>");
-        }
-        return structure;
-    }
 
-    public static string showMenu()
+    public static  void showMenu()
     {
-        Console.WriteLine("----------------------------");
+        Console.Clear();
+        Console.WriteLine("=MainMenu=");
+        Console.WriteLine("===============================");
         Console.WriteLine("1.Creat a new project.");
-        Console.WriteLine("2.Proceed with an existing project.");
-        Console.WriteLine("3.Generate a new pptx from a single slidesmaps.");
-        Console.WriteLine("----------------------------");
-        string input = Console.ReadLine();
-        return input;
+        Console.WriteLine("2.Proceed with last project.");
+        Console.WriteLine("3.Generate a new pptx from a single slidesmap.");
+        Console.WriteLine("4.Enter x to Exit.");
+        Console.WriteLine("===============================");
+        Console.WriteLine("Enter: ");
+        ConsoleKeyInfo input = Console.ReadKey();
+        switch (input.KeyChar.ToString())
+        {
+            case "1":
+                Console.ReadKey();
+                newProjectFolder = Environment.CurrentDirectory + "\\Project" + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + "-" + DateTime.Now.Hour + "-" + DateTime.Now.Minute;
+                if (!File.Exists(newProjectFolder))
+                {
+                    Directory.CreateDirectory(newProjectFolder);
+                }
+                projectSlides = newProjectFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
+                if (!File.Exists(projectSlides))
+                {
+                    File.Copy("Sample.pptx", projectSlides);
+                }
+                Console.Clear();
+                Console.WriteLine("=Menu1=");
+                Console.WriteLine("===============================");
+                Console.WriteLine("Your project folder has been created.");
+                showMenu_1();
+                break;
+            case "2":
+                Console.ReadKey();
+                string[] newProjectFolders = Directory.GetDirectories(projectFolder);
+                if(newProjectFolders.Length == 0)
+                {
+                    showMenu();
+                }
+                else
+                {
+                    newProjectFolder = newProjectFolders[newProjectFolders.Length - 1];
+                    showMenu_2(1);
+                }
+                
+                break;
+            case "3":
+                Console.Clear();
+                Console.WriteLine("=Menu3=");
+                Console.WriteLine("===============================");
+                Console.WriteLine("Your project folder has been created.");
+                break;
+            case "x":
+                Console.ReadKey();
+                Environment.Exit(0);
+                break;
+            default:
+                showMenu();
+                break;
+        }
     }
 
-    public static string showMenu_1()
+    public static void showMenu_1()
     {
-        Console.WriteLine("----------------------------");
-        Console.WriteLine("1.Import a excel file, press Enter key to update the powerpoint file. ");
+        Console.Clear();
+        Console.WriteLine("===============================");
+        Console.WriteLine("1.Import a excel file.");
         Console.WriteLine("2.Back to the previous screen.");
-        Console.WriteLine("----------------------------");
-        string input = Console.ReadLine();
-        return input;
+        Console.WriteLine("3.Enter x to Exit.");
+        Console.WriteLine("===============================");
+        ConsoleKeyInfo input = Console.ReadKey();
+        switch (input.KeyChar.ToString())
+        {
+            case "1":
+                showMenu_2(0);
+                break;
+            case "2":
+                showMenu();
+                break;
+            case "x":
+                Environment.Exit(0);
+                break;
+            default:
+                showMenu_1();
+                break;
+        }
+        //return input;
     }
 
-    public static string showMenu_2()
+    public static void showMenu_2(int hasStructure)
     {
-        Console.WriteLine("----------------------------");
-        Console.WriteLine("1.Select a project folder: ");
+        Console.Clear();
+        Console.WriteLine("===============================");
+        Console.WriteLine("1.Import a excel file.");
         Console.WriteLine("2.Back to the previous screen.");
-        Console.WriteLine("----------------------------");
-        string input = Console.ReadLine();
-        return input;
+        Console.WriteLine("3.Enter x to Exit.");
+        Console.WriteLine("===============================");
+        ConsoleKeyInfo input = Console.ReadKey();
+        switch (input.KeyChar.ToString())
+        {
+            case "1":
+                Console.ReadKey();
+                showMenu_2_1(hasStructure);
+                break;
+            case "2":
+                Console.ReadKey();
+                showMenu();
+                break;
+            case "x":
+                Console.ReadKey();
+                Environment.Exit(0);
+                break;
+            default:
+                Console.ReadKey();
+                showMenu_2(0);
+                break;
+        }
+    }
+
+    public static void showMenu_2_1(int hasStructure)
+    {
+        Console.Clear();
+        Console.WriteLine("==================================");
+        Console.WriteLine("=====drag-and-drop the excel file here.=====");
+        Console.WriteLine("==================================");
+        string excelName = Console.ReadLine();
+        if (!File.Exists(excelName))
+        {
+            showMenu_2_1(hasStructure);
+        }
+        DataSet sheets = ReadExcel(excelName, gameConfig);
+        PowerPoint.Presentation ppt = SlidesEditer.openPPT(projectSlides);
+        if (hasStructure == 1)
+        {
+            structureFile = newProjectFolder + "\\SlidesMap.xls";
+            structure = ExcelReader.ImportDataFromAllSheets(structureFile);
+            Console.WriteLine("has structure, length {0}", structure.Tables.Count);
+        }
+        makeStructure(ppt, sheets, structure);
+        Console.WriteLine("Finish");
+        Console.ReadKey();
+        showMenu();
     }
 
     static void Main(string[] args)
-    {
-            
+    {      
         initialize();
-        string firstInput = showMenu();
-        while (firstInput != null)
-        {
-            switch (firstInput)
-            {
-                case "1":
-                    if (!File.Exists(currentLogFolder))
-                    {
-                        Directory.CreateDirectory(currentLogFolder);
-                    }
-                    if (!File.Exists(projectSlides))
-                    {
-                        File.Move("Sample.pptx", projectSlides);
-                    }
-                    Console.Clear();
-                    string input1 = showMenu_1();
-                    if (input1=="1")
-                    {
-                        Console.Clear();
-                        Console.WriteLine("inut the excel file path: ");
-                        string excelName = Console.ReadLine();
-                        Console.WriteLine(excelName);
-                        DataSet sheets = ReadExcel(excelName, gameConfig);
-                        PowerPoint.Presentation ppt = SlidesEditer.openPPT(projectSlides);
-                        makeStructure(ppt, sheets);
-                        Console.WriteLine("Finish");
-                        Console.ReadKey();
-                    }
-                    else
-                    {
-                        string excelName = Console.ReadLine();
-                        PowerPoint.Presentation ppt = SlidesEditer.openPPT(projectSlides);
-                        DataSet sheets = ReadExcel(excelName, gameConfig);
-                        makeStructure(ppt, sheets);
-                        Console.WriteLine("Finish");
-                        Console.ReadKey();
-                    }
-                    break;
-                case "2":
-                    string[] files = Directory.GetDirectories(projectFolder);
-                    int k = 1;
-                    foreach (string file in files)
-                    {
-                        Console.WriteLine(k + "、" + file);
-                        k++;
-                    }
-                    string input_folder = Console.ReadLine();
-                    currentLogFolder = files[Convert.ToInt32(input_folder)-1];
-                    if (!File.Exists(projectSlides))
-                    {
-                        File.Copy("Sample.pptx", projectSlides);
-                    }
-                    Console.Clear();
-                    string input2 = showMenu_1();
-                    if (input2 == "1")
-                    {
-                        Console.Clear();
-                        Console.WriteLine("inut the excel file path: ");
-                        string excelName = Console.ReadLine();
-                        PowerPoint.Presentation ppt = SlidesEditer.openPPT(projectSlides);
-                        DataSet sheets = ReadExcel(excelName, gameConfig);
-                        DataSet structure = ExcelReader.ImportDataFromAllSheets(structureFile);
-                        makeStructure(ppt, sheets, structure);
-                    }
-                    break;
-            }
-            /*
-            if (!File.Exists(projectSlides))
-            {
-                File.Move("Sample.pptx", projectSlides);
-            }
-            */
-        }
+        showMenu();
+        Console.ReadKey();
     }
+
 }
