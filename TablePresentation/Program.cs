@@ -74,8 +74,8 @@ class Program
         {
             for (int i = 0; i < width; i++)
             {
-                ((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
-                ((dynamic)dr[i])["bgColor"] = Convert.ToInt32(((dynamic)dr[i])["bgColor"]);
+                //((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
+                //((dynamic)dr[i])["bgColor"] = Convert.ToInt32(((dynamic)dr[i])["bgColor"]);
                 string text = ((dynamic)dr[i])["text"];
                 string format = ((dynamic)dr[i])["format"];
                 if (text.IndexOf(".") != -1 && text.IndexOf(".") == text.LastIndexOf("."))
@@ -104,7 +104,6 @@ class Program
             Console.ReadKey();
             Environment.Exit(0);
         }
-        Console.WriteLine("reading excel file : {0}", excelFile);
         DataSet sheets = ExcelReader.ImportDataFromAllSheets(excelFile);
         //string json = String.Empty;
         if (sheets != null)
