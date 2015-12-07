@@ -74,8 +74,8 @@ class Program
         {
             for (int i = 0; i < width; i++)
             {
-                //((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
-                //((dynamic)dr[i])["bgColor"] = Convert.ToInt32(((dynamic)dr[i])["bgColor"]);
+                ((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
+                ((dynamic)dr[i])["bgColor"] = Convert.ToInt32(((dynamic)dr[i])["bgColor"]);
                 string text = ((dynamic)dr[i])["text"];
                 string format = ((dynamic)dr[i])["format"];
                 if (text.IndexOf(".") != -1 && text.IndexOf(".") == text.LastIndexOf("."))
@@ -452,5 +452,8 @@ class Program
         initialize();
         showMenu();
         Console.ReadKey();
+        /*
+        Zm9yIGhlcg==
+        */
     }
 }

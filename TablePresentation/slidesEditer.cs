@@ -9,8 +9,8 @@ namespace PowerPointOperator
 {
     public class SlidesEditer
     {
-        PowerPoint.Application appPPT = null;
-        PowerPoint.Presentation pptPrest = null;
+        //PowerPoint.Application appPPT = null;
+        //PowerPoint.Presentation pptPrest = null;
 
         public static PowerPoint.Presentation openPPT(string filePath)
         {

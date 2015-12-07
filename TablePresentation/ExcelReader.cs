@@ -116,9 +116,9 @@ namespace ExcelManipulater
                     for (columnCount = 1; columnCount <= range.Columns.Count; columnCount++)
                     {
                         object cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value;
-                        int textColor = 0;
+                        double textColor = 0;
                         string textFormat = "G/通用格式";
-                        int bgColor = 0;
+                        double bgColor = 0;
                         if (cellText == null)
                         {
                             cellText = String.Empty;
