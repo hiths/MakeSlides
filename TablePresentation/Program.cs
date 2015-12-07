@@ -29,7 +29,7 @@ class Program
         {
             gameConfig = getConfigFile(configFile);
             gamesCount = gameConfig.Keys.Count;
-            foreach(string game in gameConfig.Keys)
+            foreach (string game in gameConfig.Keys)
             {
                 gameList.Add(game);
             }
@@ -47,6 +47,16 @@ class Program
         {
             Directory.CreateDirectory(projectFolder);
         }
+        newProjectFolder = String.Empty;
+        projectSlides = String.Empty;
+        structureFile = String.Empty;
+    }
+
+    public static void reset()
+    {
+        newProjectFolder = String.Empty;
+        projectSlides = String.Empty;
+        structureFile = String.Empty;
     }
 
     public static Dictionary<string, int[]> getConfigFile(string configFilePath)
@@ -69,18 +79,18 @@ class Program
                 string format = ((dynamic)dr[i])["format"];
                 if (text.IndexOf(".") != -1 && text.IndexOf(".") == text.LastIndexOf("."))
                 {
-                        
-                    if(format.IndexOf("%") != -1)
+
+                    if (format.IndexOf("%") != -1)
                     {
-                        ((dynamic)dr[i])["text"] =(Math.Round(double.Parse(text), 4, MidpointRounding.AwayFromZero)*100).ToString() + "%";
+                        ((dynamic)dr[i])["text"] = (Math.Round(double.Parse(text), 4, MidpointRounding.AwayFromZero) * 100).ToString() + "%";
 
                     }
                     else
                     {
                         ((dynamic)dr[i])["text"] = Math.Round(double.Parse(text), 2, MidpointRounding.AwayFromZero).ToString();
-                    }   
+                    }
                 }
-                dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"]}, { "color", ((dynamic)dr[i])["color"]}};
+                dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"] }, { "color", ((dynamic)dr[i])["color"] } };
             }
         }
     }
@@ -100,9 +110,9 @@ class Program
         {
             if (gameConfig != null)
             {
-                for(int i = sheets.Tables.Count-1; i >= 0; i --)
+                for (int i = sheets.Tables.Count - 1; i >= 0; i--)
                 {
-                    if(sheets.Tables[i].Rows.Count < 3)
+                    if (sheets.Tables[i].Rows.Count < 3)
                     {
                         sheets.Tables.Remove(sheets.Tables[i]);
                         continue;
@@ -139,7 +149,7 @@ class Program
 
     public static DataSet insertTableToSet(DataSet ds, DataTable dt, int index)
     {
-        if(index < 0 | index >= ds.Tables.Count)
+        if (index < 0 | index >= ds.Tables.Count)
         {
             ds.Tables.Add(dt);
             return ds;
@@ -147,12 +157,12 @@ class Program
         else
         {
             DataSet newDataSet = new DataSet();
-            for(int i = 0; i < index; i++)
+            for (int i = 0; i < index; i++)
             {
                 newDataSet.Tables.Add(ds.Tables[i].Copy());
             }
             newDataSet.Tables.Add(dt);
-            for(int i = index; i < ds.Tables.Count; i++)
+            for (int i = index; i < ds.Tables.Count; i++)
             {
                 newDataSet.Tables.Add(ds.Tables[i].Copy());
             }
@@ -254,7 +264,7 @@ class Program
                     else
                     {
                         int insertIndex = 0;
-                        for (int a = structure.Tables.Count - 1; a >= 0; a --)
+                        for (int a = structure.Tables.Count - 1; a >= 0; a--)
                         {
                             string pageGame = ((structure.Tables[a].TableName).Split(new char[1] { '-' }))[0];
                             int pageGameIndex = ((dynamic)gameConfig[pageGame])[1];
@@ -287,7 +297,7 @@ class Program
         }
         ExcelWriter.ExportDataToExcel(structure, newProjectFolder + "\\" + "SlidesMap.xls");
         pptPrest.SaveAs(projectSlides);
-        return structure;      
+        return structure;
     }
 
     public static List<string> getSlidesIndex(DataSet structure)
@@ -303,8 +313,29 @@ class Program
     }
 
 
+    public static void makeSlidesFormStructure(DataSet structure)
+    {
+        creatNewProject();
+        
+    }
+
+    public static void creatNewProject()
+    {
+        newProjectFolder = Environment.CurrentDirectory + "\\Project" + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + "-" + DateTime.Now.Hour + "-" + DateTime.Now.Minute;
+        if (!File.Exists(newProjectFolder))
+        {
+            Directory.CreateDirectory(newProjectFolder);
+        }
+        projectSlides = newProjectFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
+        if (!File.Exists(projectSlides))
+        {
+            File.Copy("Sample.pptx", projectSlides);
+        }
+    }
+
     public static  void showMenu()
     {
+        reset();
         Console.Clear();
         Console.WriteLine("=MainMenu=");
         Console.WriteLine("===============================");
@@ -319,16 +350,7 @@ class Program
         {
             case "1":
                 Console.ReadKey();
-                newProjectFolder = Environment.CurrentDirectory + "\\Project" + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + "-" + DateTime.Now.Hour + "-" + DateTime.Now.Minute;
-                if (!File.Exists(newProjectFolder))
-                {
-                    Directory.CreateDirectory(newProjectFolder);
-                }
-                projectSlides = newProjectFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
-                if (!File.Exists(projectSlides))
-                {
-                    File.Copy("Sample.pptx", projectSlides);
-                }
+                creatNewProject();
                 Console.Clear();
                 Console.WriteLine("=Menu1=");
                 Console.WriteLine("===============================");
@@ -351,9 +373,7 @@ class Program
                 break;
             case "3":
                 Console.Clear();
-                Console.WriteLine("=Menu3=");
-                Console.WriteLine("===============================");
-                Console.WriteLine("Your project folder has been created.");
+                showMenu_3();
                 break;
             case "x":
                 Console.ReadKey();
@@ -447,11 +467,36 @@ class Program
         showMenu();
     }
 
+    public static void showMenu_3()
+    {
+        Console.Clear();
+        Console.WriteLine("===============================");
+        Console.WriteLine("1.Import the excel file.");
+        Console.WriteLine("2.Back to the previous screen.");
+        Console.WriteLine("3.Enter x to Exit.");
+        Console.WriteLine("===============================");
+        ConsoleKeyInfo input = Console.ReadKey();
+        switch (input.KeyChar.ToString())
+        {
+            case "1":
+                ;
+                break;
+            case "2":
+                showMenu();
+                break;
+            case "x":
+                Environment.Exit(0);
+                break;
+            default:
+                showMenu_3();
+                break;
+        }
+    }
+
     static void Main(string[] args)
     {      
         initialize();
         showMenu();
         Console.ReadKey();
     }
-
 }
