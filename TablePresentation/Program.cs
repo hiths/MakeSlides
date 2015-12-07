@@ -75,6 +75,7 @@ class Program
             for (int i = 0; i < width; i++)
             {
                 ((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
+                ((dynamic)dr[i])["bgColor"] = Convert.ToInt32(((dynamic)dr[i])["bgColor"]);
                 string text = ((dynamic)dr[i])["text"];
                 string format = ((dynamic)dr[i])["format"];
                 if (text.IndexOf(".") != -1 && text.IndexOf(".") == text.LastIndexOf("."))
@@ -90,7 +91,7 @@ class Program
                         ((dynamic)dr[i])["text"] = Math.Round(double.Parse(text), 2, MidpointRounding.AwayFromZero).ToString();
                     }
                 }
-                dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"] }, { "color", ((dynamic)dr[i])["color"] } };
+                dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"] }, { "color", ((dynamic)dr[i])["color"] }, { "bgColor", ((dynamic)dr[i])["bgColor"] } };
             }
         }
     }
@@ -186,18 +187,14 @@ class Program
                 string newTableName = dt.TableName.ToString() + "-" + ((dynamic)dt.Rows[j])[0]["text"];
                 int firstPageOfGame = slidesIndex.FindIndex(param => param.Equals(dt.TableName));
                 int lastPageOfGame = slidesIndex.FindLastIndex(param => param.Equals(dt.TableName));
-                //Console.WriteLine("row {0}, firstpageofgame is {1}, last is {2}", j - 1, firstPageOfGame, lastPageOfGame);
                 if (firstPageOfGame != -1)
                 {
                     bool pageFound = false;
-                    //Console.WriteLine("row{0}", j - 1);
                     for (int k = lastPageOfGame; k >= firstPageOfGame; k--)
                     {
-                        //Console.WriteLine("this row is {0}, current page is {1}", newTableName, structure.Tables[k].TableName);
                         if (structure.Tables[k].TableName.StartsWith(newTableName))
                         {
                             pageFound = true;
-                            //Console.WriteLine("row{0} found page {1}", j - 1, k + 1);
                             string foundPageName = structure.Tables[k].TableName;
                             //web game
                             if ((gameConfig[dt.TableName])[1] == 0)
@@ -254,7 +251,6 @@ class Program
                 {
                     if (structure.Tables.Count == 0)
                     {
-                        Console.WriteLine("game no find, and tables count is 0, {0}", dt.TableName);
                         DataTable newTable = dt.Clone();
                         newTable.TableName = newTableName;
                         newTable.Rows.Add(dt.Rows[0].ItemArray);
@@ -264,7 +260,6 @@ class Program
                     }
                     else
                     {
-                        Console.WriteLine("game no find, but tables count not 0, {0}", dt.TableName);
                         int insertIndex = 0;
                         for (int a = structure.Tables.Count - 1; a >= 0; a--)
                         {
@@ -305,16 +300,13 @@ class Program
 
     public static List<string> getSlidesIndex(DataSet structure)
     {
-        //List<object> slidesIndex = new List<object>();
         List<string> games = new List<string>();
-        //List<string> tableNames = new List<string>();
         for (int i = 0; i < structure.Tables.Count; i++)
         {
             games.Add((structure.Tables[i].TableName.Split(new char[1] { '-' }))[0]);
         }
         return games;
     }
-
 
     public static void creatNewProject()
     {
@@ -449,7 +441,6 @@ class Program
         {
             structureFile = newProjectFolder + "\\SlidesMap.xls";
             structure = ExcelReader.ImportDataFromAllSheets(structureFile);
-            //Console.WriteLine("has structure, length {0}", structure.Tables.Count);
         }
         makeStructure(ppt, sheets, structure);
         Console.WriteLine("Finish");

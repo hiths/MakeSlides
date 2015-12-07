@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.IO;
+using System.Drawing;
 using Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 
@@ -17,7 +18,6 @@ namespace PowerPointOperator
             {
                 Console.WriteLine("Please put the PowerPoint templet file in the root directory.");
                 Console.ReadKey();
-                //Environment.Exit(0);
                 Program.showMenu();
             }
             PowerPoint.Application appPPT = new PowerPoint.Application();
@@ -47,6 +47,7 @@ namespace PowerPointOperator
 
         public static void addRow(PowerPoint.Presentation pptPrest, int pageIndex, DataRow rowContent)
         {
+            pptPrest.Slides[pageIndex].Select();
             pptPrest.Slides[pageIndex].Shapes[1].Table.Rows.Add();
             int n =pptPrest.Slides[pageIndex].Shapes[1].Table.Rows.Count;
             addContent(pptPrest, pageIndex, n, rowContent);
@@ -58,8 +59,9 @@ namespace PowerPointOperator
             for(int i = 0; i < columnCount; i++)
             {
                 pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i+1).Shape.TextFrame.TextRange.Text= ((dynamic)content[i+1])["text"];
-                //pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i).Shape.TextFrame.TextRange.Font.Color.RGB = ((dynamic)content[i])["color"]; //RGB(0, 0, 255)
-                //pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i).Shape. to be continued
+                //string hex = Convert.ToString(((dynamic)content[i])["color"], 16);
+                //Color clr = ColorTranslator.FromHtml(hex);
+                pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i+1).Shape.TextFrame.TextRange.Font.Color.RGB = ((dynamic)content[i + 1])["color"];
             }
         }
 

@@ -52,8 +52,7 @@ namespace ExcelManipulater
             }
             finally
             {
-                //Dispose(fileName, ref xlApp, ref xlWorkBook);
-                KillExcel(xlApp);
+                Dispose(fileName, ref xlApp, ref xlWorkBook);
             }
 
             return sheets;
@@ -119,6 +118,7 @@ namespace ExcelManipulater
                         object cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value;
                         double textColor = 0;
                         string textFormat = "G/通用格式";
+                        double bgColor = 0;
                         if (cellText == null)
                         {
                             cellText = String.Empty;
@@ -128,8 +128,9 @@ namespace ExcelManipulater
                             cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value.ToString();
                             textColor = (range.Cells[rowCount, columnCount] as Excel.Range).Font.Color;
                             textFormat = (range.Cells[rowCount, columnCount] as Excel.Range).NumberFormatLocal;
+                            bgColor = (range.Cells[rowCount, columnCount] as Excel.Range).Interior.Color;
                         }
-                        Dictionary<string, object> cell = new Dictionary<string, object> { { "text", cellText }, { "color", textColor}, { "format", textFormat } };
+                        Dictionary<string, object> cell = new Dictionary<string, object> { { "text", cellText }, { "color", textColor}, { "format", textFormat }, { "bgColor", bgColor} };
                         row[columnCount - 1] = cell;
                     }
                     sheetData.Rows.Add(row);
@@ -160,7 +161,7 @@ namespace ExcelManipulater
         {
             try
             {
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(obj);
+                Marshal.ReleaseComObject(obj);
                 obj = null;
             }
             catch (Exception ex)
@@ -171,29 +172,7 @@ namespace ExcelManipulater
             finally
             {
                 GC.Collect();
-            }
-        }
-
-        [DllImport("User32.dll")]
-        public static extern int GetWindowThreadProcessId(IntPtr hWnd, out int ProcessId);
-        private static void KillExcel(Excel.Application theApp)
-        {
-            int id = 0;
-            IntPtr intptr = new IntPtr(theApp.Hwnd);
-            System.Diagnostics.Process p = null;
-            try
-            {
-                GetWindowThreadProcessId(intptr, out id);
-                p = System.Diagnostics.Process.GetProcessById(id);
-                if (p != null)
-                {
-                    p.Kill();
-                    p.Dispose();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
+                GC.WaitForPendingFinalizers();
             }
         }
     }
