@@ -36,12 +36,12 @@ namespace ExcelManipulater
             int workSheetNum = xlWorkBook.Worksheets.Count;
             int sheetCount=0;
             DataSet sheets = new DataSet();
-            Console.WriteLine("Sheet number: " + workSheetNum);
+            //Console.WriteLine("Sheet number: " + workSheetNum);
             try
             {
                 for (sheetCount = 1; sheetCount <= workSheetNum; sheetCount++)
                 {
-                    Console.WriteLine("Reading sheet{0}: {1}", sheetCount, xlWorkBook.Sheets[sheetCount].Name);
+                    //Console.WriteLine("Reading sheet{0}: {1}", sheetCount, xlWorkBook.Sheets[sheetCount].Name);
                     DataTable sheetData = ExtractDataFromSingleSheet(xlWorkBook, sheetCount);
                     sheets.Tables.Add(sheetData);
                 }

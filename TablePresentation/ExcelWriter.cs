@@ -28,7 +28,7 @@ namespace ExcelManipulater
             {
                 for (int sheetIndex = 1; sheetIndex <= sheetNum; sheetIndex++)
                 {
-                    Console.WriteLine("Writing Sheet" + sheetIndex);
+                    //Console.WriteLine("Writing Sheet" + sheetIndex);
                     if (xlWorkBook.Sheets.Count < sheetIndex)
                     {
                         xlWorkSheet = (Excel.Worksheet)xlWorkBook.Sheets.Add(misValue, xlWorkBook.Sheets[sheetIndex - 1], misValue, misValue);
@@ -72,7 +72,7 @@ namespace ExcelManipulater
         {
             try
             {
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(obj);
+                Marshal.ReleaseComObject(obj);
                 obj = null;
             }
             catch (Exception ex)
@@ -83,29 +83,7 @@ namespace ExcelManipulater
             finally
             {
                 GC.Collect();
-            }
-        }
-
-        [DllImport("User32.dll")]
-        public static extern int GetWindowThreadProcessId(IntPtr hWnd, out int ProcessId);
-        private static void KillExcel(Excel.Application theApp)
-        {
-            int id = 0;
-            IntPtr intptr = new IntPtr(theApp.Hwnd);
-            System.Diagnostics.Process p = null;
-            try
-            {
-                GetWindowThreadProcessId(intptr, out id);
-                p = System.Diagnostics.Process.GetProcessById(id);
-                if (p != null)
-                {
-                    p.Kill();
-                    p.Dispose();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
+                GC.WaitForPendingFinalizers();
             }
         }
     }

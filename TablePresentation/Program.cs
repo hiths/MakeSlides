@@ -254,6 +254,7 @@ class Program
                 {
                     if (structure.Tables.Count == 0)
                     {
+                        Console.WriteLine("game no find, and tables count is 0, {0}", dt.TableName);
                         DataTable newTable = dt.Clone();
                         newTable.TableName = newTableName;
                         newTable.Rows.Add(dt.Rows[0].ItemArray);
@@ -263,15 +264,17 @@ class Program
                     }
                     else
                     {
+                        Console.WriteLine("game no find, but tables count not 0, {0}", dt.TableName);
                         int insertIndex = 0;
                         for (int a = structure.Tables.Count - 1; a >= 0; a--)
                         {
                             string pageGame = ((structure.Tables[a].TableName).Split(new char[1] { '-' }))[0];
-                            int pageGameIndex = ((dynamic)gameConfig[pageGame])[1];
-                            int indexOfGame = ((dynamic)gameConfig[dt.TableName])[1];
+                            int pageGameIndex = ((dynamic)gameConfig[pageGame])[0];
+                            int indexOfGame = ((dynamic)gameConfig[dt.TableName])[0];
                             if (indexOfGame > pageGameIndex)
                             {
-                                insertIndex = pageGameIndex + 1;
+                                insertIndex = a + 1;
+                                break;
                             }
                         }
                         DataTable newTable = dt.Clone();
@@ -313,12 +316,6 @@ class Program
     }
 
 
-    public static void makeSlidesFormStructure(DataSet structure)
-    {
-        creatNewProject();
-        
-    }
-
     public static void creatNewProject()
     {
         newProjectFolder = Environment.CurrentDirectory + "\\Project" + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + "-" + DateTime.Now.Hour + "-" + DateTime.Now.Minute;
@@ -331,6 +328,7 @@ class Program
         {
             File.Copy("Sample.pptx", projectSlides);
         }
+        
     }
 
     public static  void showMenu()
@@ -341,20 +339,18 @@ class Program
         Console.WriteLine("===============================");
         Console.WriteLine("1.Creat a new project.");
         Console.WriteLine("2.Proceed with last project.");
-        Console.WriteLine("3.Generate a new pptx from a single slidesmap.");
-        Console.WriteLine("4.Enter x to Exit.");
+        Console.WriteLine("3.Enter x to Exit.");
         Console.WriteLine("===============================");
         Console.WriteLine("Enter: ");
         ConsoleKeyInfo input = Console.ReadKey();
         switch (input.KeyChar.ToString())
         {
             case "1":
-                Console.ReadKey();
+                //Console.ReadKey();
                 creatNewProject();
                 Console.Clear();
-                Console.WriteLine("=Menu1=");
                 Console.WriteLine("===============================");
-                Console.WriteLine("Your project folder has been created.");
+                Console.WriteLine("Your project has been created.");
                 showMenu_1();
                 break;
             case "2":
@@ -367,13 +363,9 @@ class Program
                 else
                 {
                     newProjectFolder = newProjectFolders[newProjectFolders.Length - 1];
+                    projectSlides = newProjectFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
                     showMenu_2(1);
                 }
-                
-                break;
-            case "3":
-                Console.Clear();
-                showMenu_3();
                 break;
             case "x":
                 Console.ReadKey();
@@ -387,7 +379,6 @@ class Program
 
     public static void showMenu_1()
     {
-        Console.Clear();
         Console.WriteLine("===============================");
         Console.WriteLine("1.Import a excel file.");
         Console.WriteLine("2.Back to the previous screen.");
@@ -397,7 +388,7 @@ class Program
         switch (input.KeyChar.ToString())
         {
             case "1":
-                showMenu_2(0);
+                showMenu_2_1(0);
                 break;
             case "2":
                 showMenu();
@@ -409,7 +400,6 @@ class Program
                 showMenu_1();
                 break;
         }
-        //return input;
     }
 
     public static void showMenu_2(int hasStructure)
@@ -459,38 +449,12 @@ class Program
         {
             structureFile = newProjectFolder + "\\SlidesMap.xls";
             structure = ExcelReader.ImportDataFromAllSheets(structureFile);
-            Console.WriteLine("has structure, length {0}", structure.Tables.Count);
+            //Console.WriteLine("has structure, length {0}", structure.Tables.Count);
         }
         makeStructure(ppt, sheets, structure);
         Console.WriteLine("Finish");
         Console.ReadKey();
         showMenu();
-    }
-
-    public static void showMenu_3()
-    {
-        Console.Clear();
-        Console.WriteLine("===============================");
-        Console.WriteLine("1.Import the excel file.");
-        Console.WriteLine("2.Back to the previous screen.");
-        Console.WriteLine("3.Enter x to Exit.");
-        Console.WriteLine("===============================");
-        ConsoleKeyInfo input = Console.ReadKey();
-        switch (input.KeyChar.ToString())
-        {
-            case "1":
-                ;
-                break;
-            case "2":
-                showMenu();
-                break;
-            case "x":
-                Environment.Exit(0);
-                break;
-            default:
-                showMenu_3();
-                break;
-        }
     }
 
     static void Main(string[] args)
