@@ -45,11 +45,13 @@ namespace ExcelManipulater
                         for (j = 0; j < dataTable.Columns.Count; j++)
                         {
                             //xlWorkSheet.Cells[i + 1, j + 1] = ((dynamic)dr.ItemArray[j])["text"].ToString();
-                            Excel.Range range = xlWorkSheet.Cells[i + 1, j + 1];
-                            range.Value2 = ((dynamic)dr.ItemArray[j])["text"].ToString();
-                            range.Font.Color = ((dynamic)dr.ItemArray[j])["color"];
-                            range.Interior.Color = ((dynamic)dr.ItemArray[j])["bgColor"];
-                            range.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+							if(dr.ItemArray[j] != null){
+								Excel.Range range = xlWorkSheet.Cells[i + 1, j + 1];
+								range.Value2 = ((dynamic)dr.ItemArray[j])["text"].ToString();
+								range.Font.Color = ((dynamic)dr.ItemArray[j])["color"];
+								range.Interior.Color = ((dynamic)dr.ItemArray[j])["bgColor"];
+								range.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+							}
                         }
                     }
                 }

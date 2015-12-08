@@ -68,8 +68,13 @@ class Program
         return customization;
     }
 
-    public static void regulateData(DataTable dt, int width = 8)
+    public static void regulateData(DataTable dt, int width = 9)
     {
+		if(dt.Columns.Count > width){
+			for(int i = width; i < dt.Columns.Count; i ++){
+				dt.Columns.RemoveAt(i);
+			}
+		}
         foreach (DataRow dr in dt.Rows)
         {
             for (int i = 0; i < width; i++)
@@ -172,6 +177,7 @@ class Program
 
     public static DataSet makeStructure(PowerPoint.Presentation pptPrest, DataSet newSheets, DataSet structure)
     {
+        Console.WriteLine("--> Processing...");
         List<string> slidesIndex = getSlidesIndex(structure);
         for (int i = 0; i < newSheets.Tables.Count; i++)
         {
@@ -287,13 +293,16 @@ class Program
         string json = JsonConvert.SerializeObject(structure, Formatting.Indented);
         File.WriteAllText(structureFile, json);
         */
+        pptPrest.SaveAs(projectSlides);
+        Console.WriteLine("--> Data has been added to ppt successfully.");
+        Console.WriteLine("--> Backup data to excel...");
         string slideMaps = newProjectFolder + "\\" + "SlidesMap-" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + ".xls";
         if (File.Exists(newProjectFolder + "\\" + "SlidesMap.xls"))
         {
             File.Move(newProjectFolder + "\\" + "SlidesMap.xls", slideMaps);
         }
         ExcelWriter.ExportDataToExcel(structure, newProjectFolder + "\\" + "SlidesMap.xls");
-        pptPrest.SaveAs(projectSlides);
+        Console.WriteLine("--> Data has been backuped successfully.");
         return structure;
     }
 
