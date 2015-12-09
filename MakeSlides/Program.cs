@@ -63,8 +63,16 @@ class Program
     {
         Dictionary<string, int[]> customization = new Dictionary<string, int[]>();
         string rawJson = File.ReadAllText(@"Config.json");
-        //Console.WriteLine(rawJson);
-        customization = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(rawJson);
+        if(rawJson != String.Empty)
+        {
+            customization = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(rawJson);
+        }
+        else
+        {
+            Console.WriteLine("Config.json should be configured correctly.");
+            Console.ReadKey();
+            Environment.Exit(0);
+        }
         return customization;
     }
 
