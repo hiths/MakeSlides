@@ -63,12 +63,20 @@ class Program
     {
         Dictionary<string, int[]> customization = new Dictionary<string, int[]>();
         string rawJson = File.ReadAllText(@"Config.json");
-        //Console.WriteLine(rawJson);
-        customization = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(rawJson);
+        if(rawJson != String.Empty)
+        {
+            customization = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(rawJson);
+        }
+        else
+        {
+            Console.WriteLine("Config.json should be configured correctly.");
+            Console.ReadKey();
+            Environment.Exit(0);
+        }
         return customization;
     }
 
-    public static void regulateData(DataTable dt, int width = 9)
+    public static void regulateData(DataTable dt, int width)
     {
 		if(dt.Columns.Count > width){
 			for(int i = width; i < dt.Columns.Count; i ++){
@@ -138,7 +146,7 @@ class Program
             {
                 foreach (DataTable dt in sheets.Tables)
                 {
-                    regulateData(dt);
+                    regulateData(dt, dt.Columns.Count);
                 }
             }
             // export excel files to json
@@ -449,6 +457,10 @@ class Program
         {
             structureFile = newProjectFolder + "\\SlidesMap.xls";
             structure = ExcelReader.ImportDataFromAllSheets(structureFile);
+            for(int i = 0; i < structure.Tables.Count; i++)
+            {
+                regulateData(structure.Tables[i], structure.Tables[i].Columns.Count);
+            }
         }
         makeStructure(ppt, sheets, structure);
         Console.WriteLine("Finish");
