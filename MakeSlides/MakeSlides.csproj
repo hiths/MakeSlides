@@ -120,11 +120,9 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExcelReader.cs" />
@@ -135,21 +133,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="bin\Debug\GamesInfo.json" />
-    <None Include="bin\Release\MakeSlides.exe.config" />
+    <None Include="bin\x64\Debug\MakeSlides.exe.config" />
+    <None Include="bin\x64\Release\MakeSlides.exe.config" />
     <None Include="packages.config" />
     <None Include="Properties\app.manifest" />
-  </ItemGroup>
-  <ItemGroup>
-    <COMReference Include="VBIDE">
-      <Guid>{0002E157-0000-0000-C000-000000000046}</Guid>
-      <VersionMajor>5</VersionMajor>
-      <VersionMinor>3</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>primary</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">
@@ -164,8 +151,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="bin\Release\MakeSlides.exe" />
-    <Content Include="bin\Release\MakeSlides.pdb" />
+    <Content Include="bin\x64\Debug\MakeSlides.exe" />
+    <Content Include="bin\x64\Debug\MakeSlides.pdb" />
+    <Content Include="bin\x64\Release\MakeSlides.exe" />
+    <Content Include="bin\x64\Release\MakeSlides.pdb" />
     <Content Include="icon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
