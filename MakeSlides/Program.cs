@@ -90,21 +90,25 @@ class Program
 				dt.Columns.RemoveAt(i);
 			}
 		}
+        else
+        {
+            width = dt.Columns.Count;
+        }
+
         foreach (DataRow dr in dt.Rows)
         {
             for (int i = 0; i < width; i++)
             {
-                //((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
-                try
+                if(!string.IsNullOrWhiteSpace(((dynamic)dr[i])["color"]))
                 {
-                    ((dynamic)dr[i])["color"] = Int32.Parse(((dynamic)dr[i])["color"].Substring(2), System.Globalization.NumberStyles.HexNumber);
+                    ((dynamic)dr[i])["color"] = Int32.Parse(((dynamic)dr[i])["color"], System.Globalization.NumberStyles.HexNumber);
                 }
-                catch
+                else
                 {
-                    Console.WriteLine(((dynamic)dr[i])["color"]);
+                    ((dynamic)dr[i])["color"] = string.Empty;
                 }
-                
                 string text = ((dynamic)dr[i])["text"];
+                /*
                 string format = ((dynamic)dr[i])["format"];
                 if (text.IndexOf(".") != -1 && text.IndexOf(".") == text.LastIndexOf("."))
                 {
@@ -119,6 +123,7 @@ class Program
                         ((dynamic)dr[i])["text"] = Math.Round(double.Parse(text), 2, MidpointRounding.AwayFromZero).ToString();
                     }
                 }
+                */
                 dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"] }, { "color", ((dynamic)dr[i])["color"] }};
             }
         }
@@ -319,12 +324,12 @@ class Program
         pptPrest.SaveAs(projectSlides);
         Console.WriteLine("--> Data has been added to ppt successfully.");
         Console.WriteLine("--> Backup data to excel...");
-        string slideMaps = newProjectFolder + "\\" + "SlidesMap-" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + ".xls";
-        if (File.Exists(newProjectFolder + "\\" + "SlidesMap.xls"))
+        string slideMaps = newProjectFolder + "\\" + "SlidesMap-" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + ".xlsx";
+        if (File.Exists(newProjectFolder + "\\" + "SlidesMap.xlsx"))
         {
-            File.Move(newProjectFolder + "\\" + "SlidesMap.xls", slideMaps);
+            File.Move(newProjectFolder + "\\" + "SlidesMap.xlsx", slideMaps);
         }
-        ExcelWriter.ExportDataSet(structure, newProjectFolder + "\\" + "SlidesMap.xls");
+        ExcelWriter.ExportDataSet(structure, newProjectFolder + "\\" + "SlidesMap.xlsx");
         Console.WriteLine("--> Data has been backuped successfully.");
         return structure;
     }
@@ -470,7 +475,7 @@ class Program
         PowerPoint.Presentation ppt = SlidesEditer.openPPT(projectSlides);
         if (hasStructure == 1)
         {
-            structureFile = newProjectFolder + "\\SlidesMap.xls";
+            structureFile = newProjectFolder + "\\SlidesMap.xlsx";
             structure = ExcelReader.getAllSheets(structureFile);
             for(int i = 0; i < structure.Tables.Count; i++)
             {
