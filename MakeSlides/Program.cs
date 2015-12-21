@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Data;
 using System.IO;
-using ExcelManipulater;
+using Excel;
 using PowerPointOperator;
 using Newtonsoft.Json;
 using System.Linq;
 using System.Collections.Generic;
-using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 using System.Text.RegularExpressions;
+using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 
 class Program
 {
@@ -46,6 +46,13 @@ class Program
         if (!File.Exists(projectFolder))
         {
             Directory.CreateDirectory(projectFolder);
+        }
+        if (!File.Exists("Sample.pptx"))
+        {
+            Console.WriteLine("Build a config file before the initialization of a project.");
+            Console.WriteLine("Press any key to exit.");
+            Console.ReadKey();
+            Environment.Exit(0);
         }
         newProjectFolder = String.Empty;
         projectSlides = String.Empty;
@@ -87,8 +94,16 @@ class Program
         {
             for (int i = 0; i < width; i++)
             {
-                ((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
-                ((dynamic)dr[i])["bgColor"] = Convert.ToInt32(((dynamic)dr[i])["bgColor"]);
+                //((dynamic)dr[i])["color"] = Convert.ToInt32(((dynamic)dr[i])["color"]);
+                try
+                {
+                    ((dynamic)dr[i])["color"] = Int32.Parse(((dynamic)dr[i])["color"].Substring(2), System.Globalization.NumberStyles.HexNumber);
+                }
+                catch
+                {
+                    Console.WriteLine(((dynamic)dr[i])["color"]);
+                }
+                
                 string text = ((dynamic)dr[i])["text"];
                 string format = ((dynamic)dr[i])["format"];
                 if (text.IndexOf(".") != -1 && text.IndexOf(".") == text.LastIndexOf("."))
@@ -104,7 +119,7 @@ class Program
                         ((dynamic)dr[i])["text"] = Math.Round(double.Parse(text), 2, MidpointRounding.AwayFromZero).ToString();
                     }
                 }
-                dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"] }, { "color", ((dynamic)dr[i])["color"] }, { "bgColor", ((dynamic)dr[i])["bgColor"] } };
+                dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"] }, { "color", ((dynamic)dr[i])["color"] }};
             }
         }
     }
@@ -117,7 +132,7 @@ class Program
             Console.ReadKey();
             Environment.Exit(0);
         }
-        DataSet sheets = ExcelReader.ImportDataFromAllSheets(excelFile);
+        DataSet sheets = ExcelReader.getAllSheets(excelFile);
         //string json = String.Empty;
         if (sheets != null)
         {
@@ -309,7 +324,7 @@ class Program
         {
             File.Move(newProjectFolder + "\\" + "SlidesMap.xls", slideMaps);
         }
-        ExcelWriter.ExportDataToExcel(structure, newProjectFolder + "\\" + "SlidesMap.xls");
+        ExcelWriter.ExportDataSet(structure, newProjectFolder + "\\" + "SlidesMap.xls");
         Console.WriteLine("--> Data has been backuped successfully.");
         return structure;
     }
@@ -456,7 +471,7 @@ class Program
         if (hasStructure == 1)
         {
             structureFile = newProjectFolder + "\\SlidesMap.xls";
-            structure = ExcelReader.ImportDataFromAllSheets(structureFile);
+            structure = ExcelReader.getAllSheets(structureFile);
             for(int i = 0; i < structure.Tables.Count; i++)
             {
                 regulateData(structure.Tables[i], structure.Tables[i].Columns.Count);

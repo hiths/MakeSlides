@@ -1,137 +1,140 @@
 ﻿using System;
 using System.IO;
 using System.Data;
-using Newtonsoft.Json;
-using Excel = Microsoft.Office.Interop.Excel;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using OfficeOpenXml;
 
-namespace ExcelManipulater
+
+namespace Excel
 {
     public class ExcelReader
     {
-        private static void Initialize(string fileName, out Excel.Application xlApp, out Excel.Workbook xlWorkBook)
+        private static void Initialize(string filePath, out ExcelPackage package, out ExcelWorkbook workbook)
         {
-            xlApp = new Excel.Application();
-            xlWorkBook = xlApp.Workbooks.Open(fileName, 0, true, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
-        }
-
-        public static string ToJson(string fileName)
-        {
-            string json = JsonConvert.SerializeObject(ImportDataFromAllSheets(fileName), Formatting.Indented);
-            return json;
-        }
-
-        public static DataSet ImportDataFromAllSheets(string fileName)
-        {
-            if (!File.Exists(fileName))
+            if (!File.Exists(filePath))
             {
-                return null;
+                //return null;
             }
-
-            Excel.Application xlApp;
-            Excel.Workbook xlWorkBook;
-            Initialize(fileName, out xlApp, out xlWorkBook);
-
-            int workSheetNum = xlWorkBook.Worksheets.Count;
-            int sheetCount=0;
-            DataSet sheets = new DataSet();
-            //Console.WriteLine("Sheet number: " + workSheetNum);
-            try
+            if (! filePath.EndsWith(".xls")| !filePath.EndsWith(".xlsx") )
             {
-                for (sheetCount = 1; sheetCount <= workSheetNum; sheetCount++)
+                //return null;
+            }
+            package = new ExcelPackage(new FileInfo(filePath));
+            workbook = package.Workbook;
+        }
+
+
+        public static DataSet getAllSheets(string filePath)
+        {
+            ExcelPackage package;
+            ExcelWorkbook workbook;
+            Initialize(filePath, out package, out workbook);
+            int sheetsCount = package.Workbook.Worksheets.Count;
+            DataSet sheetsSet = new DataSet();
+            if (sheetsCount > 0)
+            {
+                try
                 {
-                    //Console.WriteLine("Reading sheet{0}: {1}", sheetCount, xlWorkBook.Sheets[sheetCount].Name);
-                    DataTable sheetData = ExtractDataFromSingleSheet(xlWorkBook, sheetCount);
-                    sheets.Tables.Add(sheetData);
+                    for (int i = 1; i <= sheetsCount; i++)
+                    {
+                        if (workbook.Worksheets[i].Dimension == null)       // empty sheet is not equal to null, but its dimension is.
+                        {
+                            //Console.WriteLine("sheet {0} is empty.", i);
+                        }
+                        else
+                        {
+                            DataTable sheetData = getSpecifiedSheet(workbook, i);
+                            sheetsSet.Tables.Add(sheetData);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
                 }
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-            finally
-            {
-                Dispose(fileName, ref xlApp, ref xlWorkBook);
-            }
-
-            return sheets;
+            return sheetsSet;
         }
 
-        public static DataTable ImprotDataFromSingleSheet(string fileName, int sheetIndex)
+        public static DataTable getSpecifiedSheet(string filePath, int sheetIndex)
         {
-            if(!File.Exists(fileName))
+            if(!File.Exists(filePath))
             {
                 return null;
             }
 
-            Excel.Application xlApp;
-            Excel.Workbook xlWorkBook;
-            Initialize(fileName, out xlApp, out xlWorkBook);
+            ExcelPackage package;
+            ExcelWorkbook workbook;
+            Initialize(filePath, out package, out workbook);
 
-            DataTable sheetData = null;
+            DataTable sheetData = new DataTable();
 
             try
             {
-                sheetData = ExtractDataFromSingleSheet(xlWorkBook, sheetIndex);
+                getSpecifiedSheet(workbook, sheetIndex);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
-            }
-            finally
-            {
-                Dispose(fileName, ref xlApp, ref xlWorkBook);
             }
 
             return sheetData;
         }
 
-        private static DataTable ExtractDataFromSingleSheet(Excel.Workbook xlWorkBook, int sheetCount)
+        private static DataTable getSpecifiedSheet(ExcelWorkbook workbook, int sheetIndex)
         {
-            int rowCount = 0;
-            int columnCount = 0;
-            DataTable sheetData = new DataTable();
+            ExcelWorksheet sheet = workbook.Worksheets[sheetIndex];
+            DataTable sheetData = new DataTable(sheet.Name);
+            int rowCount = sheet.Dimension.End.Row;
+            int colCount = sheet.Dimension.End.Column;
 
-            Excel.Worksheet xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(sheetCount);
-            Excel.Range range = xlWorkSheet.UsedRange;
-            sheetData.TableName = xlWorkSheet.Name;
-
-            for (int i = 0; i < range.Columns.Count; i++)
+            for (int i = 1; i <= colCount; i ++)
             {
-                //sheetData.Columns.Add(new DataColumn()); 
-                object cell = (range.Cells[1, i+1] as Excel.Range).Value2;
-                string columnName = cell != null ? (range.Cells[1, i+1] as Excel.Range).Value2.ToString() : String.Empty;
+                object cell =  sheet.Cells[i, 1].Value;
+                string columnName = cell != null ? cell.ToString() : string.Empty;
                 DataColumn column = new DataColumn();
-                column.ColumnName = columnName;
                 column.DataType = Type.GetType("System.Object");
                 sheetData.Columns.Add(column);
             }
 
             try
             {
-                for (rowCount = 1; rowCount <= range.Rows.Count; rowCount++)
+                for (int i = 1; i <= rowCount; i ++)
                 {
+                    
                     DataRow row = sheetData.NewRow();
-                    for (columnCount = 1; columnCount <= range.Columns.Count; columnCount++)
+                    for (int j = 1; j <= colCount; j ++)
                     {
-                        object cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value;
-                        double textColor = 0;
-                        string textFormat = "G/通用格式";
-                        double bgColor = 0;
-                        if (cellText == null)
+                        ExcelRange cell = sheet.Cells[i, j];
+
+                        object cellText = cell.Value;
+                        if(cellText == null)
                         {
-                            cellText = String.Empty;
+                            cellText = "--";
                         }
                         else
                         {
-                            cellText = (range.Cells[rowCount, columnCount] as Excel.Range).Value.ToString();
-                            textColor = (range.Cells[rowCount, columnCount] as Excel.Range).Font.Color;
-                            textFormat = (range.Cells[rowCount, columnCount] as Excel.Range).NumberFormatLocal;
-                            bgColor = (range.Cells[rowCount, columnCount] as Excel.Range).Interior.Color;
+                            cellText = cellText.ToString();
                         }
-                        Dictionary<string, object> cell = new Dictionary<string, object> { { "text", cellText }, { "color", textColor}, { "format", textFormat }, { "bgColor", bgColor} };
-                        row[columnCount - 1] = cell;
+
+                        string textColor = cell.Style.Font.Color.Rgb;
+                        if (string.IsNullOrEmpty(textColor))
+                        {
+                            textColor = "00000000";
+                        }
+
+                        /*
+                        string bgColor = cell.Style.Fill.BackgroundColor.Rgb;
+                        if (string.IsNullOrEmpty(bgColor))
+                        {
+                            bgColor = "00FEEEFF";
+                        }
+                        */
+
+                        string textFormat = cell.Style.Numberformat.Format;
+                        
+                        Dictionary<string, object> box = new Dictionary<string, object> { { "text", cellText }, { "color", textColor}, { "format", textFormat }};
+                        row[j - 1] = box;
                     }
                     sheetData.Rows.Add(row);
                 }
@@ -140,40 +143,9 @@ namespace ExcelManipulater
             {
                 Console.WriteLine(e.ToString());
             }
-            finally
-            {
-                ReleaseObject(xlWorkSheet);
-            }
 
             return sheetData;
-        }
-
-        private static void Dispose(string fileName, ref Excel.Application xlApp, ref Excel.Workbook xlWorkBook)
-        {
-            xlWorkBook.Close(false, fileName, null);
-            xlApp.Quit();
-
-            ReleaseObject(xlWorkBook);
-            ReleaseObject(xlApp);
-        }
-
-        private static void ReleaseObject(object obj)
-        {
-            try
-            {
-                Marshal.ReleaseComObject(obj);
-                obj = null;
-            }
-            catch (Exception ex)
-            {
-                obj = null;
-                Console.WriteLine(ex.ToString());
-            }
-            finally
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
+            
         }
     }
 }

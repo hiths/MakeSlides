@@ -1,94 +1,54 @@
 ﻿using System;
 using System.Data;
-using Excel = Microsoft.Office.Interop.Excel;
-using System.Runtime.InteropServices;
+using System.IO;
+using System.Drawing;
+using OfficeOpenXml;
 
-namespace ExcelManipulater
+
+namespace Excel
 {
     public class ExcelWriter
     {
-        public static Boolean ExportDataToExcel(DataSet dataSheets, string fileName)
+        public static Boolean ExportDataSet(DataSet ds, string filePath)
         {
-            Excel.Application xlApp = null;
-            Excel.Workbook xlWorkBook = null;
-            Excel.Worksheet xlWorkSheet = null;
-            object misValue = System.Reflection.Missing.Value;
-            xlApp = new Excel.Application();
-            xlWorkBook = xlApp.Workbooks.Add(misValue);
-            //xlApp.Visible = true;
-            xlApp.DisplayAlerts = false;
-            int sheetNum = dataSheets.Tables.Count;
-            int i = 0;
-            int j = 0;
-
-            try
+            ExcelPackage package = new ExcelPackage();
+            for (int i = 0; i < ds.Tables.Count; i++)
             {
-                for (int sheetIndex = 1; sheetIndex <= sheetNum; sheetIndex++)
-                {
-                    //Console.WriteLine("Writing Sheet" + sheetIndex);
-                    if (xlWorkBook.Sheets.Count < sheetIndex)
-                    {
-                        xlWorkSheet = (Excel.Worksheet)xlWorkBook.Sheets.Add(misValue, xlWorkBook.Sheets[sheetIndex - 1], misValue, misValue);
-                    }
-                    else
-                    {
-                        xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(sheetIndex);
-                    }
-                    DataTable dataTable = dataSheets.Tables[sheetIndex - 1];
-                    xlWorkSheet.Name = dataTable.TableName;
-                    for (i = 0; i < dataTable.Rows.Count; i++)
-                    {
-                        DataRow dr = dataTable.Rows[i];
-                        for (j = 0; j < dataTable.Columns.Count; j++)
-                        {
-                            //xlWorkSheet.Cells[i + 1, j + 1] = ((dynamic)dr.ItemArray[j])["text"].ToString();
-							if(dr.ItemArray[j] != null){
-								Excel.Range range = xlWorkSheet.Cells[i + 1, j + 1];
-								range.Value2 = ((dynamic)dr.ItemArray[j])["text"].ToString();
-								range.Font.Color = ((dynamic)dr.ItemArray[j])["color"];
-								range.Interior.Color = ((dynamic)dr.ItemArray[j])["bgColor"];
-								range.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-							}
-                        }
-                    }
-                }
+                package = writeToSheet(package, ds.Tables[i]);
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-                return false;
-            }
-            finally
-            {
-                xlWorkBook.SaveAs(fileName, Excel.XlFileFormat.xlWorkbookNormal, misValue, misValue, misValue, misValue, Excel.XlSaveAsAccessMode.xlExclusive, misValue, misValue, misValue, misValue, misValue);
-                xlWorkBook.Close(true, fileName, misValue);
-                xlApp.Quit();
-
-                ReleaseObject(xlWorkSheet);
-                ReleaseObject(xlWorkBook);
-                ReleaseObject(xlApp);
-            }
-
+            package.SaveAs(new FileInfo(filePath));
             return true;
         }
 
-        private static void ReleaseObject(object obj)
+        private static ExcelPackage writeToSheet(ExcelPackage package, DataTable dt)
         {
-            try
+            ExcelWorksheet sheet = package.Workbook.Worksheets.Add(dt.TableName);
+            int rows = dt.Rows.Count;
+            int cols = dt.Columns.Count;
+            for (int i = 1; i <= rows; i++)
             {
-                Marshal.ReleaseComObject(obj);
-                obj = null;
+                DataRow dr = dt.Rows[i - 1];
+                for (int j = 1; j <= cols; j++)
+                {
+                    sheet.Cells[i, j].Value = ((dynamic)dr[j-1])["text"];
+                    //sheet.Cells[i, j].Style.Numberformat.Format = ((dynamic)dr[j-1])["format"];
+
+                    Color color = System.Drawing.ColorTranslator.FromHtml("#" + ((dynamic)dr[j-1])["color"]);
+                    sheet.Cells[i, j].Style.Font.Color.SetColor(color);
+
+                    /*
+                    sheet.Cells[i, j].Style.Fill.PatternType = ExcelFillStyle.LightUp;
+                    Color bgColor = System.Drawing.ColorTranslator.FromHtml("#" + ((dynamic)dr[j-1])["bgColor"]);
+                    sheet.Cells[i, j].Style.Fill.BackgroundColor.SetColor(bgColor);
+                    */
+                }  
             }
-            catch (Exception ex)
-            {
-                obj = null;
-                Console.WriteLine(ex.ToString());
-            }
-            finally
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
+            /*
+            ExcelRange r = sheet.Cells[1, 1, cols, rows];
+            r.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+            r.AutoFitColumns();
+            */
+            return package;
         }
     }
 }
