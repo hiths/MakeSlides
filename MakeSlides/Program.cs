@@ -56,7 +56,7 @@ class Program
         }
         if (!File.Exists(tempoFile))
         {
-            FileStream f = File.CreateText(tempoFile);
+            File.CreateText(tempoFile).Dispose();
         }
         if (!File.Exists("Sample.pptx"))
         {
@@ -416,19 +416,11 @@ class Program
             }
             
         }
-        Console.WriteLine("--> All things Done.");
+        Console.WriteLine("--> Done.");
+        Console.WriteLine("--> Press Enter to Exit.");
         ppt.Close();
         app.Quit();
         GC.Collect();
-        /*
-        Process[] pros = Process.GetProcesses();
-        for (int i = 0; i < pros.Count(); i++)
-        {
-            if (pros[i].ProcessName.ToLower().Contains("powerpoint"))
-            {
-                pros[i].Kill();
-            }
-        }*/
         Console.ReadKey();
     }
 }
