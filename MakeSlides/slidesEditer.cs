@@ -11,15 +11,14 @@ namespace PowerPointOperator
         //PowerPoint.Application appPPT = null;
         //PowerPoint.Presentation pptPrest = null;
 
-        public static PowerPoint.Presentation openPPT(string filePath)
+        public static PowerPoint.Presentation openPPT(string filePath, PowerPoint.Application appPPT)
         {
             if (!File.Exists(filePath))
             {
                 Console.WriteLine("Please put the PowerPoint templet file in the root directory.");
                 Console.ReadKey();
-                Program.showMenu();
+                //Program.showMenu();
             }
-            PowerPoint.Application appPPT = new PowerPoint.Application();
             //appPPT.Visible = MsoTriState.msoFalse;
             PowerPoint.Presentation pptPrest = appPPT.Presentations.Open(filePath, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoCTrue);
             return pptPrest;
@@ -46,6 +45,7 @@ namespace PowerPointOperator
 
         public static void addRow(PowerPoint.Presentation pptPrest, int pageIndex, DataRow rowContent)
         {
+            //pptPrest.SlideShowWindow.Presentation.Slides[pageIndex].Select();
             pptPrest.Slides[pageIndex].Select();
             pptPrest.Slides[pageIndex].Shapes[1].Table.Rows.Add();
             int n =pptPrest.Slides[pageIndex].Shapes[1].Table.Rows.Count;

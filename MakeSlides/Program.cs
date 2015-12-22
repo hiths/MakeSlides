@@ -8,6 +8,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 class Program
 {
@@ -17,13 +19,14 @@ class Program
     private static string configFile = Environment.CurrentDirectory + "\\Config.json";
     private static string projectFolder = Environment.CurrentDirectory + "\\Project";
     private static string newProjectFolder = String.Empty;
-    private static string projectSlides = String.Empty;
-    //private static string backupFolder = "Backup";
+    private static string projectSlides = projectFolder + "\\Sample.pptx";
+    private static string excelsHere = projectFolder + "\\ExcelsHere";
+    private static string tempoFile = projectFolder + "\\tempo.txt";
     //private static string outputFolder = "OutPut";
     private static string structureFile = String.Empty;
-    private static DataSet structure = new DataSet();
+    //private static DataSet structure = new DataSet();
 
-    public static void initialize()
+    public static Boolean initialize()
     {
         if (File.Exists(configFile))
         {
@@ -47,6 +50,14 @@ class Program
         {
             Directory.CreateDirectory(projectFolder);
         }
+        if (!File.Exists(excelsHere))
+        {
+            Directory.CreateDirectory(excelsHere);
+        }
+        if (!File.Exists(tempoFile))
+        {
+            FileStream f = File.CreateText(tempoFile);
+        }
         if (!File.Exists("Sample.pptx"))
         {
             Console.WriteLine("Build a config file before the initialization of a project.");
@@ -55,14 +66,13 @@ class Program
             Environment.Exit(0);
         }
         newProjectFolder = String.Empty;
-        projectSlides = String.Empty;
         structureFile = String.Empty;
+        return true;
     }
 
     public static void reset()
     {
         newProjectFolder = String.Empty;
-        projectSlides = String.Empty;
         structureFile = String.Empty;
     }
 
@@ -85,8 +95,10 @@ class Program
 
     public static void regulateData(DataTable dt, int width)
     {
-		if(dt.Columns.Count > width){
-			for(int i = width; i < dt.Columns.Count; i ++){
+		if(dt.Columns.Count > width)
+        {
+			for(int i = width; i < dt.Columns.Count; i ++)
+            {
 				dt.Columns.RemoveAt(i);
 			}
 		}
@@ -108,22 +120,6 @@ class Program
                     ((dynamic)dr[i])["color"] = string.Empty;
                 }
                 string text = ((dynamic)dr[i])["text"];
-                /*
-                string format = ((dynamic)dr[i])["format"];
-                if (text.IndexOf(".") != -1 && text.IndexOf(".") == text.LastIndexOf("."))
-                {
-
-                    if (format.IndexOf("%") != -1)
-                    {
-                        ((dynamic)dr[i])["text"] = (Math.Round(double.Parse(text), 4, MidpointRounding.AwayFromZero) * 100).ToString() + "%";
-
-                    }
-                    else
-                    {
-                        ((dynamic)dr[i])["text"] = Math.Round(double.Parse(text), 2, MidpointRounding.AwayFromZero).ToString();
-                    }
-                }
-                */
                 dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"] }, { "color", ((dynamic)dr[i])["color"] }};
             }
         }
@@ -322,15 +318,15 @@ class Program
         File.WriteAllText(structureFile, json);
         */
         pptPrest.SaveAs(projectSlides);
-        Console.WriteLine("--> Data has been added to ppt successfully.");
-        Console.WriteLine("--> Backup data to excel...");
-        string slideMaps = newProjectFolder + "\\" + "SlidesMap-" + DateTime.Now.Hour.ToString() + "-" + DateTime.Now.Minute.ToString() + ".xlsx";
-        if (File.Exists(newProjectFolder + "\\" + "SlidesMap.xlsx"))
+        Console.WriteLine("--> Mission success."); 
+        Console.WriteLine("--> Backup data...");
+        if (File.Exists(projectFolder + "\\" + "SlidesMap.xlsx"))
         {
-            File.Move(newProjectFolder + "\\" + "SlidesMap.xlsx", slideMaps);
+            File.Delete(projectFolder + "\\" + "SlidesMap.xlsx");
         }
-        ExcelWriter.ExportDataSet(structure, newProjectFolder + "\\" + "SlidesMap.xlsx");
-        Console.WriteLine("--> Data has been backuped successfully.");
+        ExcelWriter.ExportDataSet(structure, projectFolder + "\\" + "SlidesMap.xlsx");
+        Console.WriteLine("--> Backup finished.");
+        Console.WriteLine("--");
         return structure;
     }
 
@@ -344,157 +340,95 @@ class Program
         return games;
     }
 
-    public static void creatNewProject()
+    public static void creatNewSlidesFile(out string projectSlides)
     {
-        newProjectFolder = Environment.CurrentDirectory + "\\Project" + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + "-" + DateTime.Now.Hour + "-" + DateTime.Now.Minute;
-        if (!File.Exists(newProjectFolder))
-        {
-            Directory.CreateDirectory(newProjectFolder);
-        }
-        projectSlides = newProjectFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
+        //projectSlides = projectFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
+        projectSlides = projectFolder + "\\Sample.pptx";
         if (!File.Exists(projectSlides))
         {
             File.Copy("Sample.pptx", projectSlides);
-        }
-        
-    }
-
-    public static  void showMenu()
-    {
-        reset();
-        Console.Clear();
-        Console.WriteLine("=MainMenu=");
-        Console.WriteLine("===============================");
-        Console.WriteLine("1.Creat a new project.");
-        Console.WriteLine("2.Proceed with last project.");
-        Console.WriteLine("3.Enter x to Exit.");
-        Console.WriteLine("===============================");
-        Console.WriteLine("Enter: ");
-        ConsoleKeyInfo input = Console.ReadKey();
-        switch (input.KeyChar.ToString())
-        {
-            case "1":
-                //Console.ReadKey();
-                creatNewProject();
-                Console.Clear();
-                Console.WriteLine("===============================");
-                Console.WriteLine("Your project has been created.");
-                showMenu_1();
-                break;
-            case "2":
-                Console.ReadKey();
-                string[] newProjectFolders = Directory.GetDirectories(projectFolder);
-                if(newProjectFolders.Length == 0)
-                {
-                    showMenu();
-                }
-                else
-                {
-                    newProjectFolder = newProjectFolders[newProjectFolders.Length - 1];
-                    projectSlides = newProjectFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
-                    showMenu_2(1);
-                }
-                break;
-            case "x":
-                Console.ReadKey();
-                Environment.Exit(0);
-                break;
-            default:
-                showMenu();
-                break;
-        }
-    }
-
-    public static void showMenu_1()
-    {
-        Console.WriteLine("===============================");
-        Console.WriteLine("1.Import a excel file.");
-        Console.WriteLine("2.Back to the previous screen.");
-        Console.WriteLine("3.Enter x to Exit.");
-        Console.WriteLine("===============================");
-        ConsoleKeyInfo input = Console.ReadKey();
-        switch (input.KeyChar.ToString())
-        {
-            case "1":
-                showMenu_2_1(0);
-                break;
-            case "2":
-                showMenu();
-                break;
-            case "x":
-                Environment.Exit(0);
-                break;
-            default:
-                showMenu_1();
-                break;
-        }
-    }
-
-    public static void showMenu_2(int hasStructure)
-    {
-        Console.Clear();
-        Console.WriteLine("===============================");
-        Console.WriteLine("1.Import a excel file.");
-        Console.WriteLine("2.Back to the previous screen.");
-        Console.WriteLine("3.Enter x to Exit.");
-        Console.WriteLine("===============================");
-        ConsoleKeyInfo input = Console.ReadKey();
-        switch (input.KeyChar.ToString())
-        {
-            case "1":
-                Console.ReadKey();
-                showMenu_2_1(hasStructure);
-                break;
-            case "2":
-                Console.ReadKey();
-                showMenu();
-                break;
-            case "x":
-                Console.ReadKey();
-                Environment.Exit(0);
-                break;
-            default:
-                Console.ReadKey();
-                showMenu_2(0);
-                break;
-        }
-    }
-
-    public static void showMenu_2_1(int hasStructure)
-    {
-        Console.Clear();
-        Console.WriteLine("==================================");
-        Console.WriteLine("=====drag-and-drop the excel file here.=====");
-        Console.WriteLine("==================================");
-        string excelName = Console.ReadLine();
-        if (!File.Exists(excelName))
-        {
-            showMenu_2_1(hasStructure);
-        }
-        DataSet sheets = ReadExcel(excelName, gameConfig);
-        PowerPoint.Presentation ppt = SlidesEditer.openPPT(projectSlides);
-        if (hasStructure == 1)
-        {
-            structureFile = newProjectFolder + "\\SlidesMap.xlsx";
-            structure = ExcelReader.getAllSheets(structureFile);
-            for(int i = 0; i < structure.Tables.Count; i++)
-            {
-                regulateData(structure.Tables[i], structure.Tables[i].Columns.Count);
-            }
-        }
-        makeStructure(ppt, sheets, structure);
-        Console.WriteLine("Finish");
-        Console.ReadKey();
-        showMenu();
+        }  
     }
 
     static void Main(string[] args)
     {      
-        initialize();
-        showMenu();
-        Console.ReadKey();
+        Boolean bl = initialize();
+        DataSet structure = new DataSet();
+        while (!bl)
+        {
+            Console.WriteLine("--> Press Any Key to Fresh.");
+            ConsoleKeyInfo input = Console.ReadKey();
+            if (!string.IsNullOrEmpty(input.KeyChar.ToString()))
+            {
+                bl = initialize();
+            }  
+        }
+
+        IEnumerable<string> excelFiles = Directory.EnumerateFiles(excelsHere, "*.*", SearchOption.AllDirectories)
+            .Where(s => s.EndsWith(".xlsx"));
+
+        IEnumerable<string> temop = File.ReadLines(tempoFile);
+
+        List<string> todoList = new List<string>();
+        foreach (string s in excelFiles)
+        {
+            if (!temop.Contains<string>(Path.GetFileName(s)))
+            {
+                todoList.Add(s);
+            }
+        }
+        if(temop.Count<string>() == 0 && todoList.Count<string>() != 0)
+        {
+            creatNewSlidesFile(out projectSlides);
+        }
+        else if(todoList.Count<string>() == 0)
+        {
+            Console.WriteLine("--> Nothing to do.");
+            Console.ReadKey();
+            Environment.Exit(0);
+        }
+        PowerPoint.Application app = new PowerPoint.Application();
+        
+        PowerPoint.Presentation ppt = SlidesEditer.openPPT(projectSlides, app);
+        if (todoList.Count<string>() != 0)
+        {
+            Console.WriteLine("--> Working..");
+            
+            foreach (string s in todoList)
+            {
+                Console.WriteLine("--> Reading {0}:", Path.GetFileName(s));
+                DataSet sheets = ReadExcel(s, gameConfig);
+                if (temop.Count<string>() != 0)
+                {
+                    structureFile = projectFolder + "\\SlidesMap.xlsx";
+                    structure = ExcelReader.getAllSheets(structureFile);
+                    for (int i = 0; i < structure.Tables.Count; i++)
+                    {
+                        regulateData(structure.Tables[i], structure.Tables[i].Columns.Count);
+                    }
+                }       
+                makeStructure(ppt, sheets, structure);
+                using (StreamWriter sw = File.AppendText(tempoFile))
+                {
+                    sw.WriteLine(Path.GetFileName(s));
+                    sw.Close();
+                }
+            }
+            
+        }
+        Console.WriteLine("--> All things Done.");
+        ppt.Close();
+        app.Quit();
+        GC.Collect();
         /*
-        Zm9yIGhlcg==
-        */
+        Process[] pros = Process.GetProcesses();
+        for (int i = 0; i < pros.Count(); i++)
+        {
+            if (pros[i].ProcessName.ToLower().Contains("powerpoint"))
+            {
+                pros[i].Kill();
+            }
+        }*/
+        Console.ReadKey();
     }
 }
