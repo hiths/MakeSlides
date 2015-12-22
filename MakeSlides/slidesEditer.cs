@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data;
-using System.IO;
 using Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 
@@ -8,18 +7,8 @@ namespace PowerPointOperator
 {
     public class SlidesEditer
     {
-        //PowerPoint.Application appPPT = null;
-        //PowerPoint.Presentation pptPrest = null;
-
         public static PowerPoint.Presentation openPPT(string filePath, PowerPoint.Application appPPT)
         {
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine("Please put the PowerPoint templet file in the root directory.");
-                Console.ReadKey();
-                //Program.showMenu();
-            }
-            //appPPT.Visible = MsoTriState.msoFalse;
             PowerPoint.Presentation pptPrest = appPPT.Presentations.Open(filePath, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoCTrue);
             return pptPrest;
         }
@@ -62,33 +51,6 @@ namespace PowerPointOperator
                 {
                     pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i + 1).Shape.TextFrame.TextRange.Font.Color.RGB = ((dynamic)content[i + 1])["color"];
                 }
-            }
-        }
-
-        private static void Dispose(string fileName, ref PowerPoint.Application appPPT, ref PowerPoint.Presentation pptPrest)
-        {
-            pptPrest.Close();
-            appPPT.Quit();
-
-            ReleaseObject(pptPrest);
-            ReleaseObject(appPPT);
-        }
-
-        private static void ReleaseObject(object obj)
-        {
-            try
-            {
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(obj);
-                obj = null;
-            }
-            catch (Exception ex)
-            {
-                obj = null;
-                Console.WriteLine(ex.ToString());
-            }
-            finally
-            {
-                GC.Collect();
             }
         }
     }

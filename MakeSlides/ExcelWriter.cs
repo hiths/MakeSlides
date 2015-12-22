@@ -4,7 +4,6 @@ using System.Data;
 using System.Drawing;
 using OfficeOpenXml;
 
-
 namespace Excel
 {
     public class ExcelWriter

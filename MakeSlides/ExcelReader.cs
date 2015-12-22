@@ -4,7 +4,6 @@ using System.Data;
 using System.Collections.Generic;
 using OfficeOpenXml;
 
-
 namespace Excel
 {
     public class ExcelReader

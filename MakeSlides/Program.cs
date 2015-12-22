@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Microsoft.Office.Core;
 
 class Program
 {
@@ -31,6 +32,11 @@ class Program
         if (File.Exists(configFile))
         {
             gameConfig = getConfigFile(configFile);
+            if(gameConfig == null)
+            {
+                Console.WriteLine("--> Config.json should be configured correctly.");
+                return false;
+            }
             gamesCount = gameConfig.Keys.Count;
             foreach (string game in gameConfig.Keys)
             {
@@ -39,13 +45,17 @@ class Program
         }
         else
         {
-            File.Create(configFile);
-            Console.WriteLine("Build a config file before the initialization of a project.");
-            Console.WriteLine("Press any key to exit.");
+            File.Create(configFile).Dispose();
+            Console.WriteLine("--> A correct config file is needed.");
             Console.ReadKey();
-            Environment.Exit(0);
+            return false;
         }
-
+        if (!File.Exists("Sample.pptx"))
+        {
+            Console.WriteLine("--> No Sample.pptx in root directory.");
+            Console.ReadKey();
+            return false;
+        }
         if (!File.Exists(projectFolder))
         {
             Directory.CreateDirectory(projectFolder);
@@ -54,26 +64,15 @@ class Program
         {
             Directory.CreateDirectory(excelsHere);
         }
+        if (!File.Exists(projectSlides))
+        {
+            File.Copy("Sample.pptx", projectSlides);
+        }
         if (!File.Exists(tempoFile))
         {
             File.CreateText(tempoFile).Dispose();
         }
-        if (!File.Exists("Sample.pptx"))
-        {
-            Console.WriteLine("Build a config file before the initialization of a project.");
-            Console.WriteLine("Press any key to exit.");
-            Console.ReadKey();
-            Environment.Exit(0);
-        }
-        newProjectFolder = String.Empty;
-        structureFile = String.Empty;
         return true;
-    }
-
-    public static void reset()
-    {
-        newProjectFolder = String.Empty;
-        structureFile = String.Empty;
     }
 
     public static Dictionary<string, int[]> getConfigFile(string configFilePath)
@@ -82,13 +81,19 @@ class Program
         string rawJson = File.ReadAllText(@"Config.json");
         if(rawJson != String.Empty)
         {
-            customization = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(rawJson);
+            try
+            {
+                customization = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(rawJson);
+            }
+            catch (Exception ex)
+            {
+                customization = null;
+                Console.WriteLine("--> Error: {0}.", ex);
+            }
         }
         else
         {
-            Console.WriteLine("Config.json should be configured correctly.");
-            Console.ReadKey();
-            Environment.Exit(0);
+            customization = null;
         }
         return customization;
     }
@@ -134,7 +139,6 @@ class Program
             Environment.Exit(0);
         }
         DataSet sheets = ExcelReader.getAllSheets(excelFile);
-        //string json = String.Empty;
         if (sheets != null)
         {
             if (gameConfig != null)
@@ -325,7 +329,7 @@ class Program
             File.Delete(projectFolder + "\\" + "SlidesMap.xlsx");
         }
         ExcelWriter.ExportDataSet(structure, projectFolder + "\\" + "SlidesMap.xlsx");
-        Console.WriteLine("--> Backup finished.");
+        Console.WriteLine("--> Backup Completed.");
         Console.WriteLine("--");
         return structure;
     }
@@ -340,65 +344,80 @@ class Program
         return games;
     }
 
-    public static void creatNewSlidesFile(out string projectSlides)
+    private static void getLists(out IEnumerable<string> excelFiles, out IEnumerable<string> tempo)
     {
-        //projectSlides = projectFolder + "\\" + DateTime.Now.Year + "-" + DateTime.Now.Month + "-" + DateTime.Now.Day + ".pptx";
-        projectSlides = projectFolder + "\\Sample.pptx";
-        if (!File.Exists(projectSlides))
-        {
-            File.Copy("Sample.pptx", projectSlides);
-        }  
+        excelFiles = Directory.EnumerateFiles(excelsHere, "*.*", SearchOption.AllDirectories)
+            .Where(s => s.EndsWith(".xlsx"));
+        tempo = File.ReadLines(tempoFile);
     }
 
     static void Main(string[] args)
     {      
         Boolean bl = initialize();
-        DataSet structure = new DataSet();
+
         while (!bl)
         {
             Console.WriteLine("--> Press Any Key to Fresh.");
             ConsoleKeyInfo input = Console.ReadKey();
             if (!string.IsNullOrEmpty(input.KeyChar.ToString()))
             {
+                Console.Clear();
                 bl = initialize();
             }  
         }
 
-        IEnumerable<string> excelFiles = Directory.EnumerateFiles(excelsHere, "*.*", SearchOption.AllDirectories)
-            .Where(s => s.EndsWith(".xlsx"));
+        DataSet structure = new DataSet();
 
-        IEnumerable<string> temop = File.ReadLines(tempoFile);
+        IEnumerable<string> excelFiles;
+        IEnumerable<string> tempo;
+
+        getLists(out excelFiles, out tempo);
 
         List<string> todoList = new List<string>();
         foreach (string s in excelFiles)
         {
-            if (!temop.Contains<string>(Path.GetFileName(s)))
+            if (!tempo.Contains<string>(Path.GetFileName(s)))
             {
                 todoList.Add(s);
             }
         }
-        if(temop.Count<string>() == 0 && todoList.Count<string>() != 0)
+
+        while(todoList.Count<string>() == 0)
         {
-            creatNewSlidesFile(out projectSlides);
-        }
-        else if(todoList.Count<string>() == 0)
-        {
-            Console.WriteLine("--> Nothing to do.");
+            Console.WriteLine("--> No new excel files, Press any key to fresh.");
             Console.ReadKey();
-            Environment.Exit(0);
+            Console.Clear();
+            getLists(out excelFiles, out tempo);
+            foreach (string s in excelFiles)
+            {
+                if (!tempo.Contains<string>(Path.GetFileName(s)))
+                {
+                    todoList.Add(s);
+                }
+            }
         }
         PowerPoint.Application app = new PowerPoint.Application();
-        
         PowerPoint.Presentation ppt = SlidesEditer.openPPT(projectSlides, app);
+        /*
+        try
+        {
+            ppt.Windows._Index(0);
+        }
+        catch
+        {
+            ppt.Close();
+            app.Quit();
+            GC.Collect();
+        }
+        */
         if (todoList.Count<string>() != 0)
         {
-            Console.WriteLine("--> Working..");
-            
+            Console.WriteLine("-->  _(:3 」∠)_ ..");
             foreach (string s in todoList)
             {
                 Console.WriteLine("--> Reading {0}:", Path.GetFileName(s));
                 DataSet sheets = ReadExcel(s, gameConfig);
-                if (temop.Count<string>() != 0)
+                if (tempo.Count<string>() != 0)
                 {
                     structureFile = projectFolder + "\\SlidesMap.xlsx";
                     structure = ExcelReader.getAllSheets(structureFile);
