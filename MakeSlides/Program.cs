@@ -387,6 +387,7 @@ class Program
             Console.WriteLine("--> No new excel files, Press any key to fresh.");
             Console.ReadKey();
             Console.Clear();
+            initialize();
             getLists(out excelFiles, out tempo);
             foreach (string s in excelFiles)
             {
@@ -440,6 +441,7 @@ class Program
         ppt.Close();
         app.Quit();
         GC.Collect();
+        Console.SetWindowPosition(0, 0);
         Console.ReadKey();
     }
 }
