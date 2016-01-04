@@ -11,6 +11,7 @@ using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Microsoft.Office.Core;
+using System.Drawing;
 
 class Program
 {
@@ -23,7 +24,7 @@ class Program
     private static string projectSlides = projectFolder + "\\Sample.pptx";
     private static string excelsHere = projectFolder + "\\ExcelsHere";
     private static string tempoFile = projectFolder + "\\tempo.txt";
-    //private static string outputFolder = "OutPut";
+    private static string archivedFolder = projectFolder + "\\Archived";
     private static string structureFile = String.Empty;
     //private static DataSet structure = new DataSet();
 
@@ -64,6 +65,10 @@ class Program
         {
             Directory.CreateDirectory(excelsHere);
         }
+        if (!File.Exists(archivedFolder))
+        {
+            Directory.CreateDirectory(archivedFolder);
+        }
         if (!File.Exists(projectSlides))
         {
             File.Copy("Sample.pptx", projectSlides);
@@ -98,32 +103,10 @@ class Program
         return customization;
     }
 
-    public static int RGBToIntBGR(string rgb)
+    public static int RGBToIntBGR(string argb)
     {
-        int rr, gg, bb;
-        rr = gg = bb = 0;
-        if(rgb.Length > 0 & rgb.Length <= 2)
-        {
-            string r = rgb.Substring(0, rgb.Length);
-            rr = Int32.Parse(r, System.Globalization.NumberStyles.HexNumber);
-        }
-        else if(rgb.Length > 2 & rgb.Length <=4)
-        {
-            string g = rgb.Substring(2, rgb.Length - 2);
-            gg = Int32.Parse(g, System.Globalization.NumberStyles.HexNumber);
-        }
-        else if(rgb.Length > 4 & rgb.Length <= 6)
-        {
-            string b = rgb.Substring(4, rgb.Length - 4);
-            bb = Int32.Parse(b, System.Globalization.NumberStyles.HexNumber);
-        }
-        else if(rgb.Length > 6)
-        {
-            string b = rgb.Substring(4, 2);
-            bb = Int32.Parse(b, System.Globalization.NumberStyles.HexNumber);
-        }
-
-        return bb * 10 ^ 4 + gg * 10 ^ 2 + rr;
+        Color c = ColorTranslator.FromHtml("#"+ argb);
+        return c.B * (int)Math.Pow(16, 4) + c.G * (int)Math.Pow(16, 2) + c.R;
     }
 
     public static void regulateData(DataTable dt, int width)
@@ -146,9 +129,7 @@ class Program
             {
                 if(!string.IsNullOrWhiteSpace(((dynamic)dr[i])["color"]))
                 {
-                    Console.WriteLine("color is {0}:", ((dynamic)dr[i])["color"]);
                     ((dynamic)dr[i])["color"] = RGBToIntBGR(((dynamic)dr[i])["color"]);
-                    Console.WriteLine("color2 is {0}:", ((dynamic)dr[i])["color"]);
                 }
                 else
                 {
@@ -354,9 +335,10 @@ class Program
         pptPrest.SaveAs(projectSlides);
         Console.WriteLine("--> Mission success."); 
         Console.WriteLine("--> Backup data...");
+        ExcelWriter.ExportDataSet(structure, projectFolder + "\\" + "temp.xlsx");
         if (File.Exists(projectFolder + "\\" + "SlidesMap.xlsx"))
         {
-            File.Delete(projectFolder + "\\" + "SlidesMap.xlsx");
+            File.Move(projectFolder + "\\" + "SlidesMap.xlsx", archivedFolder + "\\" + "");
         }
         ExcelWriter.ExportDataSet(structure, projectFolder + "\\" + "SlidesMap.xlsx");
         Console.WriteLine("--> Backup Completed.");
