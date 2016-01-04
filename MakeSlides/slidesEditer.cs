@@ -2,6 +2,7 @@
 using System.Data;
 using Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
+using System.Drawing;
 
 namespace PowerPointOperator
 {
@@ -49,7 +50,9 @@ namespace PowerPointOperator
                 pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i+1).Shape.TextFrame.TextRange.Text= ((dynamic)content[i+1])["text"];
                 if((((dynamic)content[i + 1])["color"]).GetType() == Type.GetType("System.Int32"))
                 {
-                    pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i + 1).Shape.TextFrame.TextRange.Font.Color.RGB = ((dynamic)content[i + 1])["color"];
+                pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i + 1).Shape.TextFrame.TextRange.Font.Color.RGB = ((dynamic)content[i + 1])["color"];
+                int kk = pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i + 1).Shape.TextFrame.TextRange.Font.Color.RGB;
+                Console.WriteLine("color is :{0}", kk);
                 }
             }
         }

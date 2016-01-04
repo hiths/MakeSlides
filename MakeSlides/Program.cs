@@ -98,6 +98,34 @@ class Program
         return customization;
     }
 
+    public static int RGBToIntBGR(string rgb)
+    {
+        int rr, gg, bb;
+        rr = gg = bb = 0;
+        if(rgb.Length > 0 & rgb.Length <= 2)
+        {
+            string r = rgb.Substring(0, rgb.Length);
+            rr = Int32.Parse(r, System.Globalization.NumberStyles.HexNumber);
+        }
+        else if(rgb.Length > 2 & rgb.Length <=4)
+        {
+            string g = rgb.Substring(2, rgb.Length - 2);
+            gg = Int32.Parse(g, System.Globalization.NumberStyles.HexNumber);
+        }
+        else if(rgb.Length > 4 & rgb.Length <= 6)
+        {
+            string b = rgb.Substring(4, rgb.Length - 4);
+            bb = Int32.Parse(b, System.Globalization.NumberStyles.HexNumber);
+        }
+        else if(rgb.Length > 6)
+        {
+            string b = rgb.Substring(4, 2);
+            bb = Int32.Parse(b, System.Globalization.NumberStyles.HexNumber);
+        }
+
+        return bb * 10 ^ 4 + gg * 10 ^ 2 + rr;
+    }
+
     public static void regulateData(DataTable dt, int width)
     {
 		if(dt.Columns.Count > width)
@@ -118,7 +146,9 @@ class Program
             {
                 if(!string.IsNullOrWhiteSpace(((dynamic)dr[i])["color"]))
                 {
-                    ((dynamic)dr[i])["color"] = Int32.Parse(((dynamic)dr[i])["color"], System.Globalization.NumberStyles.HexNumber);
+                    Console.WriteLine("color is {0}:", ((dynamic)dr[i])["color"]);
+                    ((dynamic)dr[i])["color"] = RGBToIntBGR(((dynamic)dr[i])["color"]);
+                    Console.WriteLine("color2 is {0}:", ((dynamic)dr[i])["color"]);
                 }
                 else
                 {
