@@ -346,6 +346,13 @@ class Program
         return structure;
     }
 
+    public static string renameFile(string fileName, string dictionary)
+    {
+        
+        string[] files = Directory.GetFiles(dictionary);
+        for
+    }
+
     public static List<string> getSlidesIndex(DataSet structure)
     {
         List<string> games = new List<string>();
