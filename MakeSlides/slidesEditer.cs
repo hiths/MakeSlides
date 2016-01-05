@@ -48,9 +48,9 @@ namespace PowerPointOperator
             for(int i = 0; i < columnCount; i++)
             {
                 pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i+1).Shape.TextFrame.TextRange.Text= ((dynamic)content[i+1])["text"];
-                if((((dynamic)content[i + 1])["color"]).GetType() == Type.GetType("System.Int32"))
+                if(((dynamic)content[i + 1])["isColor"] == true)
                 {
-                pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i + 1).Shape.TextFrame.TextRange.Font.Color.RGB = ((dynamic)content[i + 1])["color"];
+                    pptPrest.Slides[pageIndex].Shapes[1].Table.Cell(rowIndex, i + 1).Shape.TextFrame.TextRange.Font.Color.RGB = ((dynamic)content[i + 1])["pptColor"];
                 }
             }
         }

@@ -3,6 +3,7 @@ using System.IO;
 using System.Data;
 using System.Drawing;
 using OfficeOpenXml;
+using Addins;
 
 namespace Excel
 {
@@ -31,9 +32,9 @@ namespace Excel
                 {
                     //sheet.Cells[i, j].Style.Numberformat.Format = ((dynamic)dr[j - 1])["format"];
                     sheet.Cells[i, j].Value = ((dynamic)dr[j-1])["text"];
-                    if ((((dynamic)dr[j - 1])["color"]).GetType() == Type.GetType("System.Int32"))
+                    if (((dynamic)dr[j - 1])["isColor"] == true)
                     {
-                        Color color = Color.FromArgb(((dynamic)dr[j - 1])["color"]);
+                        Color color = ColorTranslator.FromHtml("#"+((dynamic)dr[j - 1])["color"]);
                         sheet.Cells[i, j].Style.Font.Color.SetColor(color);
                     }
                 }  

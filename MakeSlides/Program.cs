@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Microsoft.Office.Core;
 using System.Drawing;
+using Addins;
 
 class Program
 {
@@ -103,44 +104,6 @@ class Program
         return customization;
     }
 
-    public static int RGBToIntBGR(string argb)
-    {
-        Color c = ColorTranslator.FromHtml("#"+ argb);
-        return c.B * (int)Math.Pow(16, 4) + c.G * (int)Math.Pow(16, 2) + c.R;
-    }
-
-    public static void regulateData(DataTable dt, int width)
-    {
-		if(dt.Columns.Count > width)
-        {
-			for(int i = width; i < dt.Columns.Count; i ++)
-            {
-				dt.Columns.RemoveAt(i);
-			}
-		}
-        else
-        {
-            width = dt.Columns.Count;
-        }
-
-        foreach (DataRow dr in dt.Rows)
-        {
-            for (int i = 0; i < width; i++)
-            {
-                if(!string.IsNullOrWhiteSpace(((dynamic)dr[i])["color"]))
-                {
-                    ((dynamic)dr[i])["color"] = RGBToIntBGR(((dynamic)dr[i])["color"]);
-                }
-                else
-                {
-                    ((dynamic)dr[i])["color"] = string.Empty;
-                }
-                string text = ((dynamic)dr[i])["text"];
-                dr[i] = new Dictionary<string, object> { { "text", ((dynamic)dr[i])["text"] }, { "color", ((dynamic)dr[i])["color"] }};
-            }
-        }
-    }
-
     public static DataSet ReadExcel(string excelFile, Dictionary<string, int[]> gameConfig = null)
     {
         if (!File.Exists(excelFile))
@@ -169,7 +132,7 @@ class Program
                     else
                     {
                         int width = ((dynamic)gameConfig[tableName])[2];
-                        regulateData(sheets.Tables[i], width);
+                        Functions.regulateData(sheets.Tables[i], width);
                     }
                 }
             }
@@ -177,7 +140,7 @@ class Program
             {
                 foreach (DataTable dt in sheets.Tables)
                 {
-                    regulateData(dt, dt.Columns.Count);
+                    Functions.regulateData(dt, dt.Columns.Count);
                 }
             }
             // export excel files to json
@@ -332,25 +295,54 @@ class Program
         string json = JsonConvert.SerializeObject(structure, Formatting.Indented);
         File.WriteAllText(structureFile, json);
         */
+
+        string archivedSlidesPath = getArchivedFilePath("Sample.pptx", archivedFolder);
+        pptPrest.SaveAs(archivedSlidesPath);
         pptPrest.SaveAs(projectSlides);
         Console.WriteLine("--> Mission success."); 
         Console.WriteLine("--> Backup data...");
-        ExcelWriter.ExportDataSet(structure, projectFolder + "\\" + "temp.xlsx");
-        if (File.Exists(projectFolder + "\\" + "SlidesMap.xlsx"))
+        string newSlidesMapPath = getArchivedFilePath("SlidesMap.xlsx", archivedFolder);
+        ExcelWriter.ExportDataSet(structure, newSlidesMapPath);
+        if(File.Exists(projectFolder + "\\" + "SlidesMap.xlsx"))
         {
-            File.Move(projectFolder + "\\" + "SlidesMap.xlsx", archivedFolder + "\\" + "");
+            File.Delete(projectFolder + "\\" + "SlidesMap.xlsx");
         }
-        ExcelWriter.ExportDataSet(structure, projectFolder + "\\" + "SlidesMap.xlsx");
+        File.Copy(newSlidesMapPath, projectFolder + "\\" + "SlidesMap.xlsx");
         Console.WriteLine("--> Backup Completed.");
         Console.WriteLine("--");
         return structure;
     }
 
-    public static string renameFile(string fileName, string dictionary)
+    public static string getArchivedFilePath(string fileName, string destDictionary)
     {
-        
-        string[] files = Directory.GetFiles(dictionary);
-        for
+        string newFilePath = destDictionary + "\\" + fileName;
+        while(File.Exists(newFilePath))
+        {
+            newFilePath = nextFileName(newFilePath);
+        }
+        return newFilePath;
+    }
+
+    public static string nextFileName(string filePath)
+    {
+        string dictionary = Path.GetDirectoryName(filePath);
+        string name = Path.GetFileNameWithoutExtension(filePath);
+        string extension = Path.GetExtension(filePath);
+        if(name.Length > 3)
+        {
+            string regex = @"((\d+))";
+            Match test = Regex.Match(name.Substring(name.Length - 3, 3), regex);
+            if (test.Length == 0)
+            {
+                name += "(1)";
+            }
+            else
+            {
+                name = name.Substring(0, name.Length - 3);
+                name += "(" + (Convert.ToInt32(test.Groups[1].Value) + 1).ToString() + ")";
+            }
+        }
+        return dictionary + "\\" + name + extension;
     }
 
     public static List<string> getSlidesIndex(DataSet structure)
@@ -443,7 +435,7 @@ class Program
                     structure = ExcelReader.getAllSheets(structureFile);
                     for (int i = 0; i < structure.Tables.Count; i++)
                     {
-                        regulateData(structure.Tables[i], structure.Tables[i].Columns.Count);
+                        Functions.regulateData(structure.Tables[i], structure.Tables[i].Columns.Count);
                     }
                 }       
                 makeStructure(ppt, sheets, structure);
