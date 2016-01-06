@@ -299,8 +299,8 @@ class Program
         string archivedSlidesPath = getArchivedFilePath("Sample.pptx", archivedFolder);
         pptPrest.SaveAs(archivedSlidesPath);
         pptPrest.SaveAs(projectSlides);
-        Console.WriteLine("--> Mission success."); 
-        Console.WriteLine("--> Backup data...");
+        Console.WriteLine("--> Mission Success."); 
+        Console.WriteLine("--> Backup Data...");
         string newSlidesMapPath = getArchivedFilePath("SlidesMap.xlsx", archivedFolder);
         ExcelWriter.ExportDataSet(structure, newSlidesMapPath);
         if(File.Exists(projectFolder + "\\" + "SlidesMap.xlsx"))
